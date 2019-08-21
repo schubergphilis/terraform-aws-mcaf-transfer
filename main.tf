@@ -46,6 +46,6 @@ POLICY
 
 resource "aws_transfer_user" "default" {
   server_id = aws_transfer_server.default.id
-  user_name = var.user_name
+  user_name = var.name
   role      = aws_iam_role.default.arn
 }
