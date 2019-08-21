@@ -49,3 +49,9 @@ resource "aws_transfer_user" "default" {
   user_name = var.name
   role      = aws_iam_role.default.arn
 }
+
+resource "aws_transfer_ssh_key" "default" {
+  server_id = aws_transfer_server.default.id
+  user_name = aws_transfer_user.default.user_name
+  body      = var.ssh_pub_key
+}
