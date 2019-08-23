@@ -1,9 +1,3 @@
-resource "aws_transfer_server" "default" {
-  identity_provider_type = "SERVICE_MANAGED"
-
-  tags = var.tags
-}
-
 resource "aws_iam_role" "default" {
   name = var.name
 
@@ -42,6 +36,13 @@ resource "aws_iam_role_policy" "default" {
     ]
 }
 POLICY
+}
+
+resource "aws_transfer_server" "default" {
+  identity_provider_type = "SERVICE_MANAGED"
+  logging_role           = aws_iam_role.default.arn
+
+  tags = var.tags
 }
 
 resource "aws_transfer_user" "default" {
