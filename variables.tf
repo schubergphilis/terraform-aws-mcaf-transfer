@@ -1,6 +1,6 @@
 variable "name" {
   type        = string
-  description = "The user, role and policy name"
+  description = "The user, role and default policy name"
 }
 
 variable "tags" {
@@ -11,4 +11,9 @@ variable "tags" {
 variable "ssh_pub_key" {
   type        = string
   description = "Public SSH key to connect to the AWS tranfer service"
+}
+
+variable "home_directory" {
+  type        = string
+  description = "Home directory in the format '/<bucket-name>/directory'"
 }

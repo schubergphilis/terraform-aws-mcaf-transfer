@@ -1,6 +1,5 @@
 resource "aws_iam_role" "default" {
-  name = var.name
-
+  name               = var.name
   assume_role_policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -18,9 +17,8 @@ EOF
 }
 
 resource "aws_iam_role_policy" "default" {
-  name = var.name
-  role = aws_iam_role.default.id
-
+  name   = "$[var.name}-DefaultPolicy"
+  role   = aws_iam_role.default.id
   policy = <<POLICY
 {
     "Version": "2012-10-17",
@@ -41,14 +39,14 @@ POLICY
 resource "aws_transfer_server" "default" {
   identity_provider_type = "SERVICE_MANAGED"
   logging_role           = aws_iam_role.default.arn
-
-  tags = var.tags
+  tags                   = var.tags
 }
 
 resource "aws_transfer_user" "default" {
-  server_id = aws_transfer_server.default.id
-  user_name = var.name
-  role      = aws_iam_role.default.arn
+  server_id      = aws_transfer_server.default.id
+  user_name      = var.name
+  role           = aws_iam_role.default.arn
+  home_directory = ! var.home_directory
 }
 
 resource "aws_transfer_ssh_key" "default" {
