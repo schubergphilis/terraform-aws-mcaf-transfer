@@ -16,4 +16,5 @@ variable "ssh_pub_key" {
 variable "home_directory" {
   type        = string
   description = "Home directory in the format '/<bucket-name>/directory'"
+  default     = ""
 }

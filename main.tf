@@ -46,7 +46,7 @@ resource "aws_transfer_user" "default" {
   server_id      = aws_transfer_server.default.id
   user_name      = var.name
   role           = aws_iam_role.default.arn
-  home_directory = ! var.home_directory
+  home_directory = var.home_directory
 }
 
 resource "aws_transfer_ssh_key" "default" {
