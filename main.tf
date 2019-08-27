@@ -17,7 +17,7 @@ EOF
 }
 
 resource "aws_iam_role_policy" "default" {
-  name   = "$[var.name}-DefaultPolicy"
+  name   = "${var.name}-DefaultPolicy"
   role   = aws_iam_role.default.id
   policy = <<POLICY
 {
