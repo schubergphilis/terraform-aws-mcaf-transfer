@@ -1,3 +1,4 @@
+# Provides a role to be both used as transfer user role and transfer server role
 resource "aws_iam_role" "default" {
   name               = var.name
   assume_role_policy = <<EOF
@@ -17,23 +18,14 @@ EOF
 }
 
 resource "aws_iam_role_policy" "default" {
-  name   = "${var.name}-DefaultPolicy"
+  name   = var.name
   role   = aws_iam_role.default.id
-  policy = <<POLICY
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllowFullAccesstoS3",
-            "Effect": "Allow",
-            "Action": [
-                "s3:*"
-            ],
-            "Resource": "*"
-        }
-    ]
+  policy = var.role_policy
 }
-POLICY
+
+resource "aws_iam_role_policy_attachment" "default" {
+  role       = var.name
+  policy_arn = var.logging_policy
 }
 
 resource "aws_transfer_server" "default" {

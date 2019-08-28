@@ -18,3 +18,29 @@ variable "home_directory" {
   description = "Home directory in the format '/<bucket-name>/directory'"
   default     = ""
 }
+
+variable "role_policy" {
+  type        = string
+  description = "Default role policy for the transfer user"
+  default     = <<POLICY
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowFullAccesstoS3",
+            "Effect": "Allow",
+            "Action": [
+                "s3:*"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+POLICY
+}
+
+variable "logging_policy" {
+  type        = string
+  description = "Default logging policy for the transfer server"
+  default     = "arn:aws:iam::aws:policy/service-role/AWSTransferLoggingAccess"
+}
