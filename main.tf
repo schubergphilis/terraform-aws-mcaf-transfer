@@ -18,20 +18,24 @@ EOF
 }
 
 resource "aws_iam_role_policy" "default" {
-  name   = var.name
-  role   = aws_iam_role.default.id
-  policy = var.role_policy
+  name       = var.name
+  role       = aws_iam_role.default.id
+  policy     = var.role_policy
+  depends_on = [aws_iam_role.default]
+
 }
 
 resource "aws_iam_role_policy_attachment" "default" {
   role       = var.name
   policy_arn = var.logging_policy
+  depends_on = [aws_iam_role.default]
 }
 
 resource "aws_transfer_server" "default" {
   identity_provider_type = "SERVICE_MANAGED"
   logging_role           = aws_iam_role.default.arn
   tags                   = var.custom_hostname == "" ? var.tags : merge(var.tags, { "aws:transfer:customHostname" : var.custom_hostname })
+  depends_on             = [aws_iam_role.default]
 }
 
 resource "aws_transfer_user" "default" {
@@ -39,10 +43,12 @@ resource "aws_transfer_user" "default" {
   user_name      = var.name
   role           = aws_iam_role.default.arn
   home_directory = var.home_directory
+  depends_on     = [aws_iam_role.default]
 }
 
 resource "aws_transfer_ssh_key" "default" {
-  server_id = aws_transfer_server.default.id
-  user_name = aws_transfer_user.default.user_name
-  body      = var.ssh_pub_key
+  server_id  = aws_transfer_server.default.id
+  user_name  = aws_transfer_user.default.user_name
+  body       = var.ssh_pub_key
+  depends_on = [aws_transfer_user.default]
 }
