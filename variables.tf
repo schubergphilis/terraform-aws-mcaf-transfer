@@ -44,9 +44,3 @@ variable "logging_policy" {
   description = "Default logging policy for the transfer server"
   default     = "arn:aws:iam::aws:policy/service-role/AWSTransferLoggingAccess"
 }
-
-variable "custom_hostname" {
-  type        = string
-  description = "Optional hostname for the transfer server"
-  default     = ""
-}
