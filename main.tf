@@ -34,7 +34,7 @@ resource "aws_iam_role_policy_attachment" "default" {
 resource "aws_transfer_server" "default" {
   identity_provider_type = "SERVICE_MANAGED"
   logging_role           = aws_iam_role.default.arn
-  tags                   = var.custom_hostname == "" ? var.tags : merge(var.tags, { "aws:transfer:customHostname" = var.custom_hostname })
+  tags                   = var.custom_hostname == "" ? var.tags : merge(var.tags, { "name" = var.custom_hostname })
   depends_on             = [aws_iam_role.default]
 }
 
