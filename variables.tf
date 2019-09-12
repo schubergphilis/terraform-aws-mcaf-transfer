@@ -8,9 +8,9 @@ variable "tags" {
   description = "A mapping of tags to assign to the resources"
 }
 
-variable "ssh_pub_key" {
-  type        = string
-  description = "Public SSH key to connect to the AWS tranfer service"
+variable "ssh_pub_keys" {
+  type        = list 
+  description = "List of public SSH keys to connect to the AWS tranfer service"
 }
 
 variable "home_directory" {
