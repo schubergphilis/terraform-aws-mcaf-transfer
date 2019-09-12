@@ -9,7 +9,7 @@ variable "tags" {
 }
 
 variable "ssh_pub_keys" {
-  type        = list
+  type        = list(string)
   description = "List of public SSH keys to connect to the AWS tranfer service"
   default     = []
 }
