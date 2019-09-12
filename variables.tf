@@ -1,6 +1,6 @@
 variable "name" {
   type        = string
-  description = "The user, role and default policy name"
+  description = "The transfer username, IAM role and role policy name"
 }
 
 variable "tags" {
@@ -9,8 +9,9 @@ variable "tags" {
 }
 
 variable "ssh_pub_keys" {
-  type        = list 
+  type        = list
   description = "List of public SSH keys to connect to the AWS tranfer service"
+  default     = []
 }
 
 variable "home_directory" {
