@@ -1,6 +1,6 @@
 variable "name" {
   type        = string
-  description = "The user, role and default policy name"
+  description = "The transfer username, IAM role and role policy name"
 }
 
 variable "tags" {
@@ -8,9 +8,10 @@ variable "tags" {
   description = "A mapping of tags to assign to the resources"
 }
 
-variable "ssh_pub_key" {
-  type        = string
-  description = "Public SSH key to connect to the AWS tranfer service"
+variable "ssh_pub_keys" {
+  type        = list(string)
+  description = "List of public SSH keys to connect to the AWS tranfer service"
+  default     = []
 }
 
 variable "home_directory" {

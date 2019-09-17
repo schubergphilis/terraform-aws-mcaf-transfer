@@ -47,8 +47,9 @@ resource "aws_transfer_user" "default" {
 }
 
 resource "aws_transfer_ssh_key" "default" {
+  count      = length(var.ssh_pub_keys)
   server_id  = aws_transfer_server.default.id
   user_name  = aws_transfer_user.default.user_name
-  body       = var.ssh_pub_key
+  body       = var.ssh_pub_keys[count.index]
   depends_on = [aws_transfer_user.default]
 }
