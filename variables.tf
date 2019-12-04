@@ -12,7 +12,7 @@ variable "endpoint_type" {
 variable "vpc_endpoint_id" {
   type        = string
   description = "The endpoint ID"
-  default     = ""
+  default     = null
 }
 
 variable "ssh_pub_keys" {
