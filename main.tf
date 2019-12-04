@@ -39,7 +39,7 @@ resource "aws_transfer_server" "default" {
   depends_on             = [aws_iam_role.default]
 
   dynamic "endpoint_details" {
-    for_each = upper(var.endpoint_type) != "PUBLIC") ? list(1) : []
+    for_each = upper(var.endpoint_type) != "PUBLIC" ? list(1) : []
     content {
       vpc_endpoint_id = var.vpc_endpoint_id
     }
