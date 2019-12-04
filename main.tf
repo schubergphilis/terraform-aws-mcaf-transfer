@@ -35,7 +35,15 @@ resource "aws_transfer_server" "default" {
   identity_provider_type = "SERVICE_MANAGED"
   logging_role           = aws_iam_role.default.arn
   tags                   = var.tags
+  endpoint_type          = upper(var.endpoint_type)
   depends_on             = [aws_iam_role.default]
+
+  dynamic "endpoint_details" {
+    for_each = upper(var.endpoint_type) != "PUBLIC") ? list(1) : []
+    content {
+      vpc_endpoint_id = var.vpc_endpoint_id
+    }
+  }
 }
 
 resource "aws_transfer_user" "default" {

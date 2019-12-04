@@ -3,9 +3,16 @@ variable "name" {
   description = "The transfer username, IAM role and role policy name"
 }
 
-variable "tags" {
-  type        = map(string)
-  description = "A mapping of tags to assign to the resources"
+variable "endpoint_type" {
+  type        = string
+  description = "The endpoint type, can be VPC_ENDPOINT or PUBLIC"
+  default     = "PUBLIC"
+}
+
+variable "vpc_endpoint_id" {
+  type        = string
+  description = "The endpoint ID"
+  default     = null
 }
 
 variable "ssh_pub_keys" {
@@ -45,3 +52,9 @@ variable "logging_policy" {
   description = "Default logging policy for the transfer server"
   default     = "arn:aws:iam::aws:policy/service-role/AWSTransferLoggingAccess"
 }
+
+variable "tags" {
+  type        = map(string)
+  description = "A mapping of tags to assign to the resources"
+}
+
