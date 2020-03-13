@@ -1,17 +1,19 @@
 # terraform-aws-mcaf-transfer
 
-Creates a transfer server, user and one or more public SSH keys.
-
-Furthermore it creates a IAM role with attached role and log policy.
+Creates a transfer server and tranfer users (with one or more public SSH keys).
 
 ## Example
 ```
 module "example-transfer" {
-  source         = "github.com/schubergphilis/terraform-aws-mcaf-transfer?ref=v0.3.1"
+  source         = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
   name           = "example"
-  tags           = module.example_stack.tags
-  ssh_pub_keys   =  ["ssh-rsa <KEY1>","ssh-rsa <KEY2>"]
-  home_directory = "/<S3_BUCKET_NAME>"
-
+  tags           = {}
+  users = {
+    user1 = {
+      home_directory = "homedir1"
+      role_policy = null
+      ssh_pub_keys = ["key1", "key2"]
+    }
+  }
 }
 ```

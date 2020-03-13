@@ -1,93 +1,94 @@
 locals {
-  user_name_ssh_pub_keys = flatten([
-    for transfer_user_key, transfer_user in var.transfer_users : [
-      for ssh_pub_key in transfer_user.ssh_pub_keys : {
-        user_name   = transfer_user.user_name
-        role_policy = transfer_user.role_policy
-        ssh_pub_key = ssh_pub_key
+  user_policy = data.aws_iam_policy_document.user_policy.json
+
+  user_ssh_keys = flatten([
+    for user, config in var.users : [
+      for ssh_key in config.ssh_pub_keys : {
+        user    = user
+        ssh_key = ssh_key
       }
     ]
   ])
-  default_transfer_user_role_policy = <<POLICY
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllowFullAccesstoS3",
-            "Effect": "Allow",
-            "Action": [
-                "s3:*"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
-POLICY
 }
 
-resource "aws_iam_role" "default" {
-  name               = var.name
-  assume_role_policy = <<EOF
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-        "Effect": "Allow",
-        "Principal": {
-            "Service": "transfer.amazonaws.com"
-        },
-        "Action": "sts:AssumeRole"
-        }
+data "aws_iam_policy_document" "user_policy" {
+  statement {
+    actions = [
+      "s3:*"
     ]
-}
-EOF
+    resources = [
+      "*"
+    ]
+  }
 }
 
-resource "aws_iam_role_policy_attachment" "default" {
-  role       = var.name
+data "aws_iam_policy_document" "assume_policy" {
+  statement {
+    actions = [
+      "sts:AssumeRole"
+    ]
+    principals {
+      type        = "Service"
+      identifiers = ["transfer.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "server" {
+  name               = "TransferRole-${var.name}"
+  assume_role_policy = data.aws_iam_policy_document.assume_policy.json
+  tags               = var.tags
+}
+
+resource "aws_iam_role_policy_attachment" "server" {
+  role       = aws_iam_role.server.id
   policy_arn = var.logging_policy
-  depends_on = [aws_iam_role.default]
 }
 
 resource "aws_transfer_server" "default" {
   identity_provider_type = "SERVICE_MANAGED"
-  logging_role           = aws_iam_role.default.arn
-  tags                   = var.tags
   endpoint_type          = upper(var.endpoint_type)
-  depends_on             = [aws_iam_role.default]
+  logging_role           = aws_iam_role.server.arn
+  tags                   = var.tags
 
   dynamic "endpoint_details" {
-    for_each = upper(var.endpoint_type) != "PUBLIC" ? list(1) : []
+    for_each = var.vpc_endpoint_id != null ? list(1) : []
+
     content {
       vpc_endpoint_id = var.vpc_endpoint_id
     }
   }
 }
 
-resource "aws_iam_role_policy" "default" {
-  for_each = var.transfer_users
+resource "aws_iam_role" "user" {
+  for_each = var.users
 
-  name       = each.value.user_name
-  role       = aws_iam_role.default.id
-  policy     = each.value.role_policy != null ? each.value.role_policy : local.default_transfer_user_role_policy
-  depends_on = [aws_iam_role.default]
+  name               = "TransferUserRole-${var.name}-${each.key}"
+  assume_role_policy = data.aws_iam_policy_document.assume_policy.json
+  tags               = var.tags
+}
+
+resource "aws_iam_role_policy" "user" {
+  for_each = var.users
+
+  name   = "TransferUserPolicy-${var.name}-${each.key}"
+  policy = each.value.role_policy != null ? each.value.role_policy : local.transfer_policy
+  role   = aws_iam_role.user[each.key].id
 }
 
 resource "aws_transfer_user" "default" {
-  for_each = var.transfer_users
+  for_each = var.users
 
-  server_id      = aws_transfer_server.default.id
-  user_name      = each.value.user_name
+  user_name      = each.key
   home_directory = each.value.home_directory
-  role           = aws_iam_role.default.arn
-  depends_on     = [aws_iam_role.default]
+  role           = aws_iam_role.user[each.key].arn
+  server_id      = aws_transfer_server.default.id
 }
 
 resource "aws_transfer_ssh_key" "default" {
-  count = length(local.user_name_ssh_pub_keys)
+  for_each = local.user_ssh_keys
 
-  server_id  = aws_transfer_server.default.id
-  user_name  = local.user_name_ssh_pub_keys[count.index].user_name
-  body       = local.user_name_ssh_pub_keys[count.index].ssh_pub_key
-  depends_on = [aws_transfer_user.default]
+  user_name = aws_transfer_user.default[each.value.user].user_name
+  body      = each.value.key
+  server_id = aws_transfer_server.default.id
 }
