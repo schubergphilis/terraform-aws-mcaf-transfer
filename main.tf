@@ -1,18 +1,15 @@
 locals {
   user_policy = data.aws_iam_policy_document.user_policy.json
 
-  user_ssh_keys = flatten([
+  user_ssh_keys = { for item in flatten([
     for user, config in var.users : [
-      for ssh_key in config.ssh_pub_keys : {
+      for index, ssh_key in config.ssh_pub_keys : {
+        index   = index
         user    = user
         ssh_key = ssh_key
       }
     ]
-  ])
-
-  user_ssh_keys_map = {
-    for item in local.user_ssh_keys: "${item.user}:${item.ssh_key}" => item
-  }
+  ]) : "${item.user}:${item.index}" => item }
 }
 
 data "aws_iam_policy_document" "user_policy" {
@@ -90,7 +87,7 @@ resource "aws_transfer_user" "default" {
 }
 
 resource "aws_transfer_ssh_key" "default" {
-  for_each = local.user_ssh_keys_map
+  for_each = local.user_ssh_keys
 
   user_name = aws_transfer_user.default[each.value.user].user_name
   body      = each.value.ssh_key
