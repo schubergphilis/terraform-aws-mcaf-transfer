@@ -9,6 +9,10 @@ locals {
       }
     ]
   ])
+
+  user_ssh_keys_map = {
+    for item in local.user_ssh_keys: "${item.user}:${item.ssh_key}" => item
+  }
 }
 
 data "aws_iam_policy_document" "user_policy" {
@@ -86,9 +90,9 @@ resource "aws_transfer_user" "default" {
 }
 
 resource "aws_transfer_ssh_key" "default" {
-  for_each = local.user_ssh_keys
+  for_each = local.user_ssh_keys_map
 
   user_name = aws_transfer_user.default[each.value.user].user_name
-  body      = each.value.key
+  body      = each.value.ssh_key
   server_id = aws_transfer_server.default.id
 }
