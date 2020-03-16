@@ -1,56 +1,18 @@
 variable "name" {
   type        = string
-  description = "The transfer username, IAM role and role policy name"
+  description = "A unique name for this transfer server instance"
 }
 
 variable "endpoint_type" {
   type        = string
-  description = "The endpoint type, can be VPC_ENDPOINT or PUBLIC"
   default     = "PUBLIC"
-}
-
-variable "vpc_endpoint_id" {
-  type        = string
-  description = "The endpoint ID"
-  default     = null
-}
-
-variable "ssh_pub_keys" {
-  type        = list(string)
-  description = "List of public SSH keys to connect to the AWS tranfer service"
-  default     = []
-}
-
-variable "home_directory" {
-  type        = string
-  description = "Home directory in the format '/<bucket-name>/directory'"
-  default     = ""
-}
-
-variable "role_policy" {
-  type        = string
-  description = "Default role policy for the transfer user"
-  default     = <<POLICY
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "AllowFullAccesstoS3",
-            "Effect": "Allow",
-            "Action": [
-                "s3:*"
-            ],
-            "Resource": "*"
-        }
-    ]
-}
-POLICY
+  description = "The endpoint type, can be VPC_ENDPOINT or PUBLIC"
 }
 
 variable "logging_policy" {
   type        = string
-  description = "Default logging policy for the transfer server"
   default     = "arn:aws:iam::aws:policy/service-role/AWSTransferLoggingAccess"
+  description = "Default logging policy for the transfer server"
 }
 
 variable "tags" {
@@ -58,3 +20,17 @@ variable "tags" {
   description = "A mapping of tags to assign to the resources"
 }
 
+variable "users" {
+  type = map(object({
+    home_directory = string
+    role_policy    = string
+    ssh_pub_keys   = list(string)
+  }))
+  description = "A map with transfer users and configuration details"
+}
+
+variable "vpc_endpoint_id" {
+  type        = string
+  default     = null
+  description = "An optional VPC endpoint ID"
+}
