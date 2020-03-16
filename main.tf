@@ -72,7 +72,7 @@ resource "aws_iam_role_policy" "user" {
   for_each = var.users
 
   name   = "TransferUserPolicy-${var.name}-${each.key}"
-  policy = each.value.role_policy != null ? each.value.role_policy : local.transfer_policy
+  policy = each.value.role_policy != null ? each.value.role_policy : local.user_policy
   role   = aws_iam_role.user[each.key].id
 }
 
