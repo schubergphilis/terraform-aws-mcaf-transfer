@@ -53,10 +53,12 @@ resource "aws_transfer_server" "default" {
   tags                   = var.tags
 
   dynamic "endpoint_details" {
-    for_each = var.vpc_endpoint_id != null ? list(1) : []
+    for_each = var.vpc_id != null ? list(1) : []
 
     content {
-      vpc_endpoint_id = var.vpc_endpoint_id
+      vpc_id                 = var.vpc_id
+      subnet_ids             = var.subnet_ids
+      address_allocation_ids = var.address_allocation_ids
     }
   }
 }

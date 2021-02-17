@@ -29,8 +29,20 @@ variable "users" {
   description = "A map with transfer users and configuration details"
 }
 
-variable "vpc_endpoint_id" {
+variable "vpc_id" {
   type        = string
   default     = null
-  description = "An optional VPC endpoint ID"
+  description = "An optional VPC ID"
+}
+
+variable "subnet_ids" {
+  type        = list(string)
+  default     = null
+  description = "Optional Subnet IDs"
+}
+
+variable "address_allocation_ids" {
+  type        = list(string)
+  default     = null
+  description = "Optional Public Elastic IPs"
 }
