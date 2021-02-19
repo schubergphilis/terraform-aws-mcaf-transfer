@@ -1,6 +1,7 @@
-variable "name" {
-  type        = string
-  description = "A unique name for this transfer server instance"
+variable "address_allocation_ids" {
+  type        = list(string)
+  default     = null
+  description = "Optional Public Elastic IPs"
 }
 
 variable "endpoint_type" {
@@ -13,6 +14,17 @@ variable "logging_policy" {
   type        = string
   default     = "arn:aws:iam::aws:policy/service-role/AWSTransferLoggingAccess"
   description = "Default logging policy for the transfer server"
+}
+
+variable "name" {
+  type        = string
+  description = "A unique name for this transfer server instance"
+}
+
+variable "subnet_ids" {
+  type        = list(string)
+  default     = null
+  description = "Optional Subnet IDs"
 }
 
 variable "tags" {
@@ -33,16 +45,4 @@ variable "vpc_id" {
   type        = string
   default     = null
   description = "An optional VPC ID"
-}
-
-variable "subnet_ids" {
-  type        = list(string)
-  default     = null
-  description = "Optional Subnet IDs"
-}
-
-variable "address_allocation_ids" {
-  type        = list(string)
-  default     = null
-  description = "Optional Public Elastic IPs"
 }
