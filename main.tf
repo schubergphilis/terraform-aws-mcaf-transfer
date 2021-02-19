@@ -1,6 +1,7 @@
 locals {
   endpoint_details = var.endpoint_details != null ? { create = true } : {}
   user_policy      = data.aws_iam_policy_document.user_policy.json
+
   user_ssh_keys = { for item in flatten([
     for user, config in var.users : [
       for index, ssh_key in config.ssh_pub_keys : {
@@ -17,6 +18,7 @@ data "aws_iam_policy_document" "user_policy" {
     actions = [
       "s3:*"
     ]
+
     resources = [
       "*"
     ]
@@ -28,6 +30,7 @@ data "aws_iam_policy_document" "assume_policy" {
     actions = [
       "sts:AssumeRole"
     ]
+
     principals {
       type        = "Service"
       identifiers = ["transfer.amazonaws.com"]
@@ -47,8 +50,8 @@ resource "aws_iam_role_policy_attachment" "server" {
 }
 
 resource "aws_transfer_server" "default" {
-  identity_provider_type = "SERVICE_MANAGED"
   endpoint_type          = upper(var.endpoint_type)
+  identity_provider_type = "SERVICE_MANAGED"
   logging_role           = aws_iam_role.server.arn
   tags                   = var.tags
 

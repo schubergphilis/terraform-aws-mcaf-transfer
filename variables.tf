@@ -1,17 +1,17 @@
 variable "endpoint_details" {
   type = object({
-    vpc_id                 = string
-    subnet_ids             = list(string)
     address_allocation_ids = list(string)
+    subnet_ids             = list(string)
+    vpc_id                 = string
   })
   default     = null
-  description = "Variables needed when using endpoint_type VPC: VPC ID, Subnet ID, Public Elastic IP)"
+  description = "VPC endpoint configuration, required when using endpoint type VPC (address_allocation_ids is optional)"
 }
 
 variable "endpoint_type" {
   type        = string
   default     = "PUBLIC"
-  description = "The endpoint type, can be VPC_ENDPOINT or PUBLIC"
+  description = "The endpoint type, can be VPC or PUBLIC"
 }
 
 variable "logging_policy" {
