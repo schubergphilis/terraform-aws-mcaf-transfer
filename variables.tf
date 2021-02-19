@@ -1,18 +1,12 @@
-variable "name" {
-  type        = string
-  description = "A unique name for this transfer server instance"
-}
-
-variable "endpoint_type" {
-  type        = string
-  default     = "PUBLIC"
-  description = "The endpoint type, can be VPC_ENDPOINT or PUBLIC"
-}
-
 variable "logging_policy" {
   type        = string
   default     = "arn:aws:iam::aws:policy/service-role/AWSTransferLoggingAccess"
   description = "Default logging policy for the transfer server"
+}
+
+variable "name" {
+  type        = string
+  description = "A unique name for this transfer server instance"
 }
 
 variable "tags" {
@@ -29,8 +23,12 @@ variable "users" {
   description = "A map with transfer users and configuration details"
 }
 
-variable "vpc_endpoint_id" {
-  type        = string
+variable "vpc_endpoint" {
+  type = object({
+    address_allocation_ids = list(string)
+    subnet_ids             = list(string)
+    vpc_id                 = string
+  })
   default     = null
-  description = "An optional VPC endpoint ID"
+  description = "Optional VPC endpoint settings for your SFTP server"
 }

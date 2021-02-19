@@ -1,5 +1,6 @@
 locals {
-  user_policy = data.aws_iam_policy_document.user_policy.json
+  user_policy  = data.aws_iam_policy_document.user_policy.json
+  vpc_endpoint = var.vpc_endpoint != null ? { create = true } : {}
 
   user_ssh_keys = { for item in flatten([
     for user, config in var.users : [
@@ -47,16 +48,18 @@ resource "aws_iam_role_policy_attachment" "server" {
 }
 
 resource "aws_transfer_server" "default" {
+  endpoint_type          = var.vpc_endpoint != null ? "VPC" : "PUBLIC"
   identity_provider_type = "SERVICE_MANAGED"
-  endpoint_type          = upper(var.endpoint_type)
   logging_role           = aws_iam_role.server.arn
   tags                   = var.tags
 
   dynamic "endpoint_details" {
-    for_each = var.vpc_endpoint_id != null ? list(1) : []
+    for_each = local.vpc_endpoint
 
     content {
-      vpc_endpoint_id = var.vpc_endpoint_id
+      address_allocation_ids = var.vpc_endpoint.address_allocation_ids
+      subnet_ids             = var.vpc_endpoint.subnet_ids
+      vpc_id                 = var.vpc_endpoint.vpc_id
     }
   }
 }
