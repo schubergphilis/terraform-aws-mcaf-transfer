@@ -1,7 +1,11 @@
-variable "address_allocation_ids" {
-  type        = list(string)
+variable "endpoint_details" {
+  type = object({
+    vpc_id                 = string
+    subnet_ids             = list(string)
+    address_allocation_ids = list(string)
+  })
   default     = null
-  description = "Optional Public Elastic IPs"
+  description = "Variables needed when using endpoint_type VPC: VPC ID, Subnet ID, Public Elastic IP)"
 }
 
 variable "endpoint_type" {
@@ -21,12 +25,6 @@ variable "name" {
   description = "A unique name for this transfer server instance"
 }
 
-variable "subnet_ids" {
-  type        = list(string)
-  default     = null
-  description = "Optional Subnet IDs"
-}
-
 variable "tags" {
   type        = map(string)
   description = "A mapping of tags to assign to the resources"
@@ -39,10 +37,4 @@ variable "users" {
     ssh_pub_keys   = list(string)
   }))
   description = "A map with transfer users and configuration details"
-}
-
-variable "vpc_id" {
-  type        = string
-  default     = null
-  description = "An optional VPC ID"
 }

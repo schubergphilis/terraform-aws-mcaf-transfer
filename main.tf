@@ -1,6 +1,6 @@
 locals {
-  user_policy = data.aws_iam_policy_document.user_policy.json
-
+  endpoint_details = var.endpoint_details != null ? { create = true } : {}
+  user_policy      = data.aws_iam_policy_document.user_policy.json
   user_ssh_keys = { for item in flatten([
     for user, config in var.users : [
       for index, ssh_key in config.ssh_pub_keys : {
@@ -53,12 +53,12 @@ resource "aws_transfer_server" "default" {
   tags                   = var.tags
 
   dynamic "endpoint_details" {
-    for_each = var.vpc_id != null ? list(1) : []
+    for_each = local.endpoint_details
 
     content {
-      vpc_id                 = var.vpc_id
-      subnet_ids             = var.subnet_ids
-      address_allocation_ids = var.address_allocation_ids
+      address_allocation_ids = var.endpoint_details.address_allocation_ids
+      subnet_ids             = var.endpoint_details.subnet_ids
+      vpc_id                 = var.endpoint_details.vpc_id
     }
   }
 }
