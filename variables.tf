@@ -23,6 +23,11 @@ variable "users" {
   description = "A map with transfer users and configuration details"
 }
 
+variable "s3_id" {
+  type    = string
+  default = ""
+}
+
 variable "vpc_endpoint" {
   type = object({
     address_allocation_ids = list(string)
@@ -31,4 +36,24 @@ variable "vpc_endpoint" {
   })
   default     = null
   description = "Optional VPC endpoint settings for your SFTP server"
+}
+variable "restricted_mode" {
+  type    = bool
+  default = false
+}
+
+variable "permissions_boundary" {
+  type        = string
+  default     = null
+  description = "The permissions boundary to set on the role"
+}
+
+variable "login_banner" {
+  type    = string
+  default = null
+}
+
+variable "transfer_security_policy" {
+  type    = string
+  default = null
 }

@@ -21,6 +21,8 @@ module "example-transfer" {
       home_directory = "homedir1"
       role_policy    = null
       ssh_pub_keys   = ["key1", "key2"]
+      restricted_mode = true
+      s3_id = bucket-name # only when restricted_mode = true
     }
   }
 }

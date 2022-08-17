@@ -37,9 +37,10 @@ data "aws_iam_policy_document" "assume_policy" {
 }
 
 resource "aws_iam_role" "server" {
-  name               = "TransferRole-${var.name}"
-  assume_role_policy = data.aws_iam_policy_document.assume_policy.json
-  tags               = var.tags
+  name                 = "TransferRole-${var.name}"
+  assume_role_policy   = data.aws_iam_policy_document.assume_policy.json
+  permissions_boundary = var.permissions_boundary
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "server" {
@@ -52,6 +53,7 @@ resource "aws_transfer_server" "default" {
   identity_provider_type = "SERVICE_MANAGED"
   logging_role           = aws_iam_role.server.arn
   tags                   = var.tags
+  security_policy_name   = var.transfer_security_policy
 
   dynamic "endpoint_details" {
     for_each = local.vpc_endpoint
@@ -67,9 +69,10 @@ resource "aws_transfer_server" "default" {
 resource "aws_iam_role" "user" {
   for_each = var.users
 
-  name               = "TransferUserRole-${var.name}-${each.key}"
-  assume_role_policy = data.aws_iam_policy_document.assume_policy.json
-  tags               = var.tags
+  name                 = "TransferUserRole-${var.name}-${each.key}"
+  assume_role_policy   = data.aws_iam_policy_document.assume_policy.json
+  tags                 = var.tags
+  permissions_boundary = var.permissions_boundary
 }
 
 resource "aws_iam_role_policy" "user" {
@@ -83,10 +86,19 @@ resource "aws_iam_role_policy" "user" {
 resource "aws_transfer_user" "default" {
   for_each = var.users
 
-  user_name      = each.key
-  home_directory = each.value.home_directory
-  role           = aws_iam_role.user[each.key].arn
-  server_id      = aws_transfer_server.default.id
+  user_name           = each.key
+  home_directory      = var.restricted_mode ? null : each.value.home_directory
+  home_directory_type = var.restricted_mode ? "LOGICAL" : "PATH"
+  role                = aws_iam_role.user[each.key].arn
+  server_id           = aws_transfer_server.default.id
+  tags                = var.tags
+  dynamic "home_directory_mappings" {
+    for_each = var.restricted_mode ? [1] : []
+    content {
+      entry  = "/"
+      target = "/${var.s3_id}/${each.key}"
+    }
+  }
 }
 
 resource "aws_transfer_ssh_key" "default" {
