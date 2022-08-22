@@ -92,6 +92,7 @@ resource "aws_transfer_user" "default" {
   role                = aws_iam_role.user[each.key].arn
   server_id           = aws_transfer_server.default.id
   tags                = var.tags
+
   dynamic "home_directory_mappings" {
     for_each = var.restricted_mode ? [1] : []
     content {

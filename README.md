@@ -8,9 +8,9 @@ module "example-transfer" {
   source           = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
   name             = "example"
   endpoint_type    = "VPC"
-  tags             = {}
   restricted_mode = false
   s3_id = bucket-name # only when restricted_mode = true
+  tags             = {}
   transfer_security_policy = "TransferSecurityPolicy-2020-06"
   endpoint_details = {
     address_allocation_ids = ["eipalloc-12345", "eipalloc-67890"]
