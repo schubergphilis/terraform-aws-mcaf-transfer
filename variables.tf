@@ -4,6 +4,12 @@ variable "logging_policy" {
   description = "Default logging policy for the transfer server"
 }
 
+variable "login_banner" {
+  type        = string
+  default     = ""
+  description = "Login banner when logging on to the AWS Transfer server"
+}
+
 variable "name" {
   type        = string
   description = "A unique name for this transfer server instance"
@@ -29,12 +35,6 @@ variable "tags" {
 variable "transfer_security_policy" {
   type    = string
   default = null
-}
-
-variable "s3_id" {
-  type        = string
-  default     = ""
-  description = "Optional name of the bucket used by AWS Transfer service. Required when using restricted_mode."
 }
 
 variable "users" {

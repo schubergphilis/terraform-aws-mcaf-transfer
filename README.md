@@ -14,13 +14,12 @@ module "example-transfer" {
     vpc_id                 = "vpc-123456"
   }
   restricted_mode = false
-  s3_id = bucket-name # only when restricted_mode = true
   tags             = {}
   transfer_security_policy = "TransferSecurityPolicy-2020-06"
 
   users = {
     user1 = {
-      home_directory = "homedir1"
+      home_directory = "/bucketname/user1"
       role_policy    = null
       ssh_pub_keys   = ["key1", "key2"]
     }

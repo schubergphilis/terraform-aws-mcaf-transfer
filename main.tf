@@ -49,11 +49,12 @@ resource "aws_iam_role_policy_attachment" "server" {
 }
 
 resource "aws_transfer_server" "default" {
-  endpoint_type          = var.vpc_endpoint != null ? "VPC" : "PUBLIC"
-  identity_provider_type = "SERVICE_MANAGED"
-  logging_role           = aws_iam_role.server.arn
-  tags                   = var.tags
-  security_policy_name   = var.transfer_security_policy
+  endpoint_type                   = var.vpc_endpoint != null ? "VPC" : "PUBLIC"
+  identity_provider_type          = "SERVICE_MANAGED"
+  logging_role                    = aws_iam_role.server.arn
+  pre_authentication_login_banner = var.login_banner != "" ? var.login_banner : null
+  security_policy_name            = var.transfer_security_policy
+  tags                            = var.tags
 
   dynamic "endpoint_details" {
     for_each = local.vpc_endpoint
@@ -97,7 +98,7 @@ resource "aws_transfer_user" "default" {
     for_each = var.restricted_mode ? [1] : []
     content {
       entry  = "/"
-      target = "/${var.s3_id}/${each.key}"
+      target = each.key
     }
   }
 }
