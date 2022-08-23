@@ -52,7 +52,7 @@ resource "aws_transfer_server" "default" {
   endpoint_type                   = var.vpc_endpoint != null ? "VPC" : "PUBLIC"
   identity_provider_type          = "SERVICE_MANAGED"
   logging_role                    = aws_iam_role.server.arn
-  pre_authentication_login_banner = var.login_banner != "" ? var.login_banner : null
+  pre_authentication_login_banner = var.pre_login_banner != "" ? var.pre_login_banner : null
   security_policy_name            = var.transfer_security_policy
   tags                            = var.tags
 
@@ -72,8 +72,8 @@ resource "aws_iam_role" "user" {
 
   name                 = "TransferUserRole-${var.name}-${each.key}"
   assume_role_policy   = data.aws_iam_policy_document.assume_policy.json
-  tags                 = var.tags
   permissions_boundary = var.permissions_boundary
+  tags                 = var.tags
 }
 
 resource "aws_iam_role_policy" "user" {

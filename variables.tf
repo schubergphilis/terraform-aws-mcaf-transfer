@@ -4,12 +4,6 @@ variable "logging_policy" {
   description = "Default logging policy for the transfer server"
 }
 
-variable "login_banner" {
-  type        = string
-  default     = ""
-  description = "Login banner when logging on to the AWS Transfer server"
-}
-
 variable "name" {
   type        = string
   description = "A unique name for this transfer server instance"
@@ -19,6 +13,12 @@ variable "permissions_boundary" {
   type        = string
   default     = null
   description = "The permissions boundary to set on the role"
+}
+
+variable "pre_login_banner" {
+  type        = string
+  default     = ""
+  description = "Login banner presented before logging on to the AWS Transfer server"
 }
 
 variable "restricted_mode" {
