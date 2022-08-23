@@ -98,7 +98,7 @@ resource "aws_transfer_user" "default" {
     for_each = var.restricted_mode ? [1] : []
     content {
       entry  = "/"
-      target = each.key
+      target = each.value.home_directory
     }
   }
 }
