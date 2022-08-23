@@ -17,7 +17,7 @@ variable "permissions_boundary" {
 
 variable "pre_login_banner" {
   type        = string
-  default     = ""
+  default     = null
   description = "Login banner presented before logging on to the AWS Transfer server"
 }
 
