@@ -24,7 +24,7 @@ variable "pre_login_banner" {
 variable "restricted_mode" {
   type        = bool
   default     = false
-  description = "Optional restricted mode. Requires s3_id."
+  description = "Optional restricted mode."
 }
 
 variable "tags" {
