@@ -9,9 +9,33 @@ variable "name" {
   description = "A unique name for this transfer server instance"
 }
 
+variable "permissions_boundary" {
+  type        = string
+  default     = null
+  description = "The permissions boundary to set on the role"
+}
+
+variable "pre_login_banner" {
+  type        = string
+  default     = null
+  description = "Login banner presented before logging on to the AWS Transfer server"
+}
+
+variable "restricted_mode" {
+  type        = bool
+  default     = false
+  description = "Lock down all users to their home directory."
+}
+
 variable "tags" {
   type        = map(string)
   description = "A mapping of tags to assign to the resources"
+}
+
+variable "transfer_security_policy" {
+  type        = string
+  default     = null
+  description = "Define the set of cryptographic algorithms accepted by the service."
 }
 
 variable "users" {
