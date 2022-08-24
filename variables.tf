@@ -24,7 +24,7 @@ variable "pre_login_banner" {
 variable "restricted_mode" {
   type        = bool
   default     = false
-  description = "Optional restricted mode."
+  description = "Lock down all users to their home directory."
 }
 
 variable "tags" {
@@ -35,6 +35,7 @@ variable "tags" {
 variable "transfer_security_policy" {
   type    = string
   default = null
+  description = "Define the set of cryptographic algorithms accepted by the service."
 }
 
 variable "users" {

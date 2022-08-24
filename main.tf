@@ -52,7 +52,7 @@ resource "aws_transfer_server" "default" {
   endpoint_type                   = var.vpc_endpoint != null ? "VPC" : "PUBLIC"
   identity_provider_type          = "SERVICE_MANAGED"
   logging_role                    = aws_iam_role.server.arn
-  pre_authentication_login_banner = var.pre_login_banner != "" ? var.pre_login_banner : null
+  pre_authentication_login_banner = var.pre_login_banner
   security_policy_name            = var.transfer_security_policy
   tags                            = var.tags
 
