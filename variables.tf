@@ -33,8 +33,8 @@ variable "tags" {
 }
 
 variable "transfer_security_policy" {
-  type    = string
-  default = null
+  type        = string
+  default     = null
   description = "Define the set of cryptographic algorithms accepted by the service."
 }
 
