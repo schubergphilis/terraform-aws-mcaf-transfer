@@ -5,11 +5,11 @@ Creates a transfer server and tranfer users (with one or more public SSH keys).
 ## Example SFTP Server with VPC endpoint
 ```
 module "example-transfer" {
-  source           = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
-  name             = "example"
-  endpoint_type    = "VPC"
-  restricted_mode = false
-  tags             = {}
+  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
+  name                     = "example"
+  endpoint_type            = "VPC"
+  restricted_mode          = false
+  tags                     = {}
   transfer_security_policy = "TransferSecurityPolicy-2020-06"
 
   endpoint_details = {
