@@ -12,7 +12,8 @@ module "example-transfer" {
   tags                     = {}
   transfer_security_policy = "TransferSecurityPolicy-2020-06"
 
-  endpoint_details = {
+  vpc_endpoint = {
+    security_group_ids     = ["sg-12345678901234567"]
     address_allocation_ids = ["eipalloc-12345", "eipalloc-67890"]
     subnet_ids             = ["subnet-12345", "subnet-67890"]
     vpc_id                 = "vpc-123456"

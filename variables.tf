@@ -27,6 +27,13 @@ variable "restricted_mode" {
   description = "Lock down all users to their home directory."
 }
 
+variable "security_group_ids" {
+  type        = list(string)
+  default     = null
+  description = "Security group ID's for VPC endpoint."
+}
+
+
 variable "tags" {
   type        = map(string)
   description = "A mapping of tags to assign to the resources"
@@ -49,6 +56,7 @@ variable "users" {
 
 variable "vpc_endpoint" {
   type = object({
+    security_group_ids     = list(string)
     address_allocation_ids = list(string)
     subnet_ids             = list(string)
     vpc_id                 = string
