@@ -49,6 +49,7 @@ variable "users" {
 
 variable "vpc_endpoint" {
   type = object({
+    security_group_ids     = list(string)
     address_allocation_ids = list(string)
     subnet_ids             = list(string)
     vpc_id                 = string
