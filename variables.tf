@@ -33,7 +33,6 @@ variable "security_group_ids" {
   description = "Security group ID's for VPC endpoint."
 }
 
-
 variable "tags" {
   type        = map(string)
   description = "A mapping of tags to assign to the resources"
