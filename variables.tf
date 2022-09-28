@@ -27,12 +27,6 @@ variable "restricted_mode" {
   description = "Lock down all users to their home directory."
 }
 
-variable "security_group_ids" {
-  type        = list(string)
-  default     = null
-  description = "Security group ID's for VPC endpoint."
-}
-
 variable "tags" {
   type        = map(string)
   description = "A mapping of tags to assign to the resources"
