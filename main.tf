@@ -66,6 +66,17 @@ resource "aws_transfer_server" "default" {
       vpc_id                 = var.vpc_endpoint.vpc_id
     }
   }
+
+  dynamic "workflow_details" {
+    for_each = var.on_upload != null ? [1] : []
+
+    content {
+      on_upload {
+        execution_role = var.on_upload.execution_role
+        workflow_id    = var.on_upload.workflow_id
+      }
+    }
+  }
 }
 
 resource "aws_iam_role" "user" {
