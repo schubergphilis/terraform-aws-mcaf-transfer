@@ -1,6 +1,7 @@
 locals {
   user_policy  = data.aws_iam_policy_document.user_policy.json
   vpc_endpoint = var.vpc_endpoint != null ? { create = true } : {}
+  on_upload    = var.on_upload != null ? { create = true } : {}
 
   user_ssh_keys = { for item in flatten([
     for user, config in var.users : [
@@ -68,7 +69,7 @@ resource "aws_transfer_server" "default" {
   }
 
   dynamic "workflow_details" {
-    for_each = var.on_upload != null ? [1] : []
+    for_each = local.on_upload
 
     content {
       on_upload {
