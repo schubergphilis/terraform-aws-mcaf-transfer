@@ -9,6 +9,15 @@ variable "name" {
   description = "A unique name for this transfer server instance"
 }
 
+variable "on_upload" {
+  type = object({
+    execution_role = string
+    workflow_id    = string
+  })
+  default     = null
+  description = "Optional trigger to execute a workflow after a file is uploaded"
+}
+
 variable "permissions_boundary" {
   type        = string
   default     = null
