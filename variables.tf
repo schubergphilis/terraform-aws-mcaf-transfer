@@ -15,7 +15,7 @@ variable "on_upload" {
     workflow_id    = string
   })
   default     = null
-  description = "Optional Workflow ID and execution role ARN on upload"
+  description = "Optional trigger to execute a workflow after a file is uploaded"
 }
 
 variable "permissions_boundary" {
