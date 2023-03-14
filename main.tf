@@ -1,8 +1,8 @@
 locals {
   user_policy       = data.aws_iam_policy_document.user_policy.json
   vpc_endpoint      = var.vpc_endpoint != null ? { create = true } : {}
-  on_upload         = var.on_upload != null ? { create = true } : {}
-  on_partial_upload = var.on_partial_upload != null ? { create = true } : {}
+  on_upload         = var.on_upload != null ? { create = true } : null
+  on_partial_upload = var.on_partial_upload != null ? { create = true } : null
 
   user_ssh_keys = { for item in flatten([
     for user, config in var.users : [
@@ -69,22 +69,26 @@ resource "aws_transfer_server" "default" {
     }
   }
 
-  workflow_details {
-    dynamic "on_upload" {
-      for_each = local.on_upload
+  dynamic "workflow_details" {
+    for_each = can(local.on_upload) || can(local.on_partial_upload) ? [1] : []
 
-      content {
-        execution_role = var.on_upload.execution_role
-        workflow_id    = var.on_upload.workflow_id
+    content {
+      dynamic "on_upload" {
+        for_each = local.on_upload == null ? [] : [1]
+
+        content {
+          execution_role = var.on_upload.execution_role
+          workflow_id    = var.on_upload.workflow_id
+        }
       }
-    }
 
-    dynamic "on_partial_upload" {
-      for_each = local.on_partial_upload
+      dynamic "on_partial_upload" {
+        for_each = local.on_partial_upload == null ? [] : [1]
 
-      content {
-        execution_role = var.on_partial_upload.execution_role
-        workflow_id    = var.on_partial_upload.workflow_id
+        content {
+          execution_role = var.on_partial_upload.execution_role
+          workflow_id    = var.on_partial_upload.workflow_id
+        }
       }
     }
   }
