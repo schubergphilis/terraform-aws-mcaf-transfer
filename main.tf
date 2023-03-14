@@ -69,8 +69,6 @@ resource "aws_transfer_server" "default" {
     }
   }
 
-  # this Terraform code block creates one or both of the on_upload and on_partial_upload blocks,
-  # depending on whether the corresponding input variables are defined and can be accessed.
   dynamic "workflow_details" {
     for_each = can(local.on_upload) || can(local.on_partial_upload) ? [1] : []
 
