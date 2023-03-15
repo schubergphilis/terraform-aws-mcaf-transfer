@@ -18,6 +18,15 @@ variable "on_upload" {
   description = "Optional trigger to execute a workflow after a file is uploaded"
 }
 
+variable "on_partial_upload" {
+  type = object({
+    execution_role = string
+    workflow_id    = string
+  })
+  default     = null
+  description = "Optional trigger to execute a workflow after a file is partially uploaded"
+}
+
 variable "permissions_boundary" {
   type        = string
   default     = null
