@@ -67,10 +67,11 @@ variable "users" {
 
 variable "vpc_endpoint" {
   type = object({
-    security_group_ids     = list(string)
-    address_allocation_ids = list(string)
-    subnet_ids             = list(string)
-    vpc_id                 = string
+    address_allocation_ids = optional(list(string))
+    security_group_ids     = optional(list(string))
+    subnet_ids             = optional(list(string))
+    vpc_endpoint_id        = optional(string)
+    vpc_id                 = optional(string)
   })
   default     = null
   description = "Optional VPC endpoint settings for your SFTP server"
