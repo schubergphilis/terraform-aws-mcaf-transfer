@@ -63,9 +63,10 @@ resource "aws_transfer_server" "default" {
     for_each = local.vpc_endpoint
 
     content {
-      security_group_ids     = var.vpc_endpoint.security_group_ids
       address_allocation_ids = var.vpc_endpoint.address_allocation_ids
+      security_group_ids     = var.vpc_endpoint.security_group_ids
       subnet_ids             = var.vpc_endpoint.subnet_ids
+      vpc_endpoint_id        = var.vpc_endpoint.vpc_endpoint_id
       vpc_id                 = var.vpc_endpoint.vpc_id
     }
   }
