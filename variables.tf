@@ -70,8 +70,8 @@ variable "endpoint_type" {
   type        = string
   default     = "PUBLIC"
   validation {
-    condition     = can(regex("^(PUBLIC|VPC|VPC_ENDPOINT)$", var.endpoint_type))
-    error_message = "Valid options are PUBLIC, VPC, or VPC_ENDPOINT"
+    condition     = contains(["PUBLIC", "VPC", "VPC_ENDPOINT"], var.endpoint_type)
+    error_message = "Allowed values for endpoint_type are PUBLIC, VPC, or VPC_ENDPOINT"
   }
 }
 
