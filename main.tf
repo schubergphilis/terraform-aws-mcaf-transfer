@@ -1,9 +1,9 @@
 locals {
-  user_policy       = data.aws_iam_policy_document.user_policy.json
-  vpc_endpoint      = var.vpc_endpoint != null ? { create = true } : {}
-  on_upload         = var.on_upload != null ? { create = true } : {}
-  on_partial_upload = var.on_partial_upload != null ? { create = true } : {}
-  workflow_details  = length(merge(local.on_upload, local.on_partial_upload)) > 0 ? { create = true } : {}
+  user_policy          = data.aws_iam_policy_document.user_policy.json
+  vpc_endpoint         = var.vpc_endpoint != null ? { create = true } : {}
+  on_upload            = var.on_upload != null ? { create = true } : {}
+  on_partial_upload    = var.on_partial_upload != null ? { create = true } : {}
+  workflow_details     = length(merge(local.on_upload, local.on_partial_upload)) > 0 ? { create = true } : {}
 
   user_ssh_keys = { for item in flatten([
     for user, config in var.users : [
@@ -52,7 +52,7 @@ resource "aws_iam_role_policy_attachment" "server" {
 }
 
 resource "aws_transfer_server" "default" {
-  endpoint_type                   = var.vpc_endpoint != null ? "VPC" : "PUBLIC"
+  endpoint_type                   = var.endpoint_type
   identity_provider_type          = "SERVICE_MANAGED"
   logging_role                    = aws_iam_role.server.arn
   pre_authentication_login_banner = var.pre_login_banner
@@ -63,11 +63,13 @@ resource "aws_transfer_server" "default" {
     for_each = local.vpc_endpoint
 
     content {
+      # Provide these 4 for endpoint_type = "VPC"
       address_allocation_ids = var.vpc_endpoint.address_allocation_ids
       security_group_ids     = var.vpc_endpoint.security_group_ids
       subnet_ids             = var.vpc_endpoint.subnet_ids
-      vpc_endpoint_id        = var.vpc_endpoint.vpc_endpoint_id
       vpc_id                 = var.vpc_endpoint.vpc_id
+      # Provide this 1 for endpoint_type = "VPC_ENDPOINT"
+      vpc_endpoint_id = var.vpc_endpoint.vpc_endpoint_id
     }
   }
 
