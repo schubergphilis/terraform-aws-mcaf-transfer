@@ -1,9 +1,9 @@
 locals {
-  user_policy          = data.aws_iam_policy_document.user_policy.json
-  vpc_endpoint         = var.vpc_endpoint != null ? { create = true } : {}
-  on_upload            = var.on_upload != null ? { create = true } : {}
-  on_partial_upload    = var.on_partial_upload != null ? { create = true } : {}
-  workflow_details     = length(merge(local.on_upload, local.on_partial_upload)) > 0 ? { create = true } : {}
+  user_policy       = data.aws_iam_policy_document.user_policy.json
+  vpc_endpoint      = var.vpc_endpoint != null ? { create = true } : {}
+  on_upload         = var.on_upload != null ? { create = true } : {}
+  on_partial_upload = var.on_partial_upload != null ? { create = true } : {}
+  workflow_details  = length(merge(local.on_upload, local.on_partial_upload)) > 0 ? { create = true } : {}
 
   user_ssh_keys = { for item in flatten([
     for user, config in var.users : [
