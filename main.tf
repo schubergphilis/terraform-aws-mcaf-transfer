@@ -52,7 +52,7 @@ resource "aws_iam_role_policy_attachment" "server" {
 }
 
 resource "aws_transfer_server" "default" {
-  endpoint_type                   = var.vpc_endpoint != null ? "VPC" : "PUBLIC"
+  endpoint_type                   = var.endpoint_type
   identity_provider_type          = "SERVICE_MANAGED"
   logging_role                    = aws_iam_role.server.arn
   pre_authentication_login_banner = var.pre_login_banner
@@ -63,11 +63,13 @@ resource "aws_transfer_server" "default" {
     for_each = local.vpc_endpoint
 
     content {
+      # Provide these 4 for endpoint_type = "VPC"
       address_allocation_ids = var.vpc_endpoint.address_allocation_ids
       security_group_ids     = var.vpc_endpoint.security_group_ids
       subnet_ids             = var.vpc_endpoint.subnet_ids
-      vpc_endpoint_id        = var.vpc_endpoint.vpc_endpoint_id
       vpc_id                 = var.vpc_endpoint.vpc_id
+      # Provide this 1 for endpoint_type = "VPC_ENDPOINT"
+      vpc_endpoint_id = var.vpc_endpoint.vpc_endpoint_id
     }
   }
 

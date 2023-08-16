@@ -65,6 +65,16 @@ variable "users" {
   description = "A map with transfer users and configuration details"
 }
 
+variable "endpoint_type" {
+  description = "Type of endpoint"
+  type        = string
+  default     = "PUBLIC"
+  validation {
+    condition     = contains(["PUBLIC", "VPC", "VPC_ENDPOINT"], var.endpoint_type)
+    error_message = "Allowed values for endpoint_type are PUBLIC, VPC, or VPC_ENDPOINT"
+  }
+}
+
 variable "vpc_endpoint" {
   type = object({
     address_allocation_ids = optional(list(string))
