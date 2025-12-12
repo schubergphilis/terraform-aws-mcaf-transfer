@@ -22,7 +22,7 @@ resource "aws_transfer_server" "default" {
   #checkov:skip=CKV_AWS_164: PUBLIC endpoint is required for our SFTP use case
   lifecycle {
     # keep host key safe
-    prevent_destroy = true
+    # prevent_destroy = true
 
     # PUBLIC → vpc_endpoint must be null
     precondition {
