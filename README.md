@@ -1,44 +1,48 @@
 # terraform-aws-mcaf-transfer
 
-Creates a transfer server and tranfer users (with one or more public SSH keys).
+Creates an AWS Transfer Family server and Transfer Family users (each with one or more SSH public keys).
+IAM roles are **not** created by this module; callers must provide external IAM roles for logging and users.
 
-## Example 1 - the default
-## endpoint_type = "PUBLIC"
-```
+## Example 1 — endpoint_type = "PUBLIC" (default)
+```hcl
 module "example-transfer" {
-  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
-  name                     = "example"
+  source = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
 
-  endpoint_type            = "PUBLIC" # or do not provide, since it defaults to "PUBLIC"
+  name                     = "example"
+  endpoint_type            = "PUBLIC" # default if omitted
   restricted_mode          = false
   tags                     = {}
-  transfer_security_policy = "TransferSecurityPolicy-2020-06"
+  transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+  # IAM role for CloudWatch logging (must be created externally)
+  logging_role_arn = aws_iam_role.transfer_logging.arn
 
   users = {
     user1 = {
       home_directory = "/bucketname/user1"
-      role_policy    = null
+      role_arn       = aws_iam_role.transfer_user_role.arn
       ssh_pub_keys   = ["key1", "key2"]
     }
   }
 }
+```
 
-```
-## Example 2
-## endpoint_type = "VPC"
-##  By using this example the AWS Transfer Family service will create the VPC endpoint in the specified VPC.
-```
+## Example 2 — endpoint_type = "VPC"
+## The AWS Transfer Family service creates the VPC endpoint inside your VPC.
+```hcl
 module "example-transfer" {
-  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
-  name                     = "example"
+  source = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
 
+  name                     = "example"
   endpoint_type            = "VPC"
   restricted_mode          = false
   tags                     = {}
-  transfer_security_policy = "TransferSecurityPolicy-2020-06"
+  transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+  logging_role_arn = aws_iam_role.transfer_logging.arn
 
   vpc_endpoint = {
-    address_allocation_ids = ["eipalloc-12345", "eipalloc-67890"] # or null
+    address_allocation_ids = ["eipalloc-12345", "eipalloc-67890"] # optional
     security_group_ids     = ["sg-12345678901234567"]
     subnet_ids             = ["subnet-12345", "subnet-67890"]
     vpc_id                 = "vpc-123456"
@@ -47,35 +51,226 @@ module "example-transfer" {
   users = {
     user1 = {
       home_directory = "/bucketname/user1"
-      role_policy    = null
+      role_arn       = aws_iam_role.transfer_user_role.arn
       ssh_pub_keys   = ["key1", "key2"]
     }
   }
 }
 ```
 
-## Example 3
-## endpoint_type = "VPC_ENDPOINT"
-##  By using this example you will make use of an already existing VPC Endpoint.
-```
+## Example 3 — endpoint_type = "VPC_ENDPOINT"
+## Use an existing VPC Endpoint (interface endpoint).
+```hcl
 module "example-transfer" {
-  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
-  name                     = "example"
+  source = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
 
+  name                     = "example"
   endpoint_type            = "VPC_ENDPOINT"
   restricted_mode          = false
   tags                     = {}
-  transfer_security_policy = "TransferSecurityPolicy-2020-06"
+  transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+  logging_role_arn = aws_iam_role.transfer_logging.arn
 
   vpc_endpoint = {
-    vpc_endpoint_id        = "vpc-endpoint-id-123456"
+    vpc_endpoint_id = "vpce-1234567890abcdef"
+    # No security_group_ids, subnet_ids, or vpc_id allowed in VPC_ENDPOINT mode
   }
 
   users = {
     user1 = {
       home_directory = "/bucketname/user1"
-      role_policy    = null
+      role_arn       = aws_iam_role.transfer_user_role.arn
       ssh_pub_keys   = ["key1", "key2"]
+    }
+  }
+}
+```
+
+## Example 4
+## identity_provider_type = "AWS_LAMBDA" with sftp_authentication_methods
+```hcl
+module "example-transfer" {
+  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
+  name                     = "example-lambda-idp"
+
+  endpoint_type            = "PUBLIC"
+  restricted_mode          = false
+  tags                     = {}
+  transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+  logging_role_arn = aws_iam_role.transfer_logging.arn
+
+  identity_provider_type      = "AWS_LAMBDA"
+  sftp_authentication_methods = "PUBLIC_KEY_OR_PASSWORD"
+
+  identity_provider_details = {
+    function_arn = aws_lambda_function.transfer_identity_provider.arn
+  }
+
+  users = {
+    user1 = {
+      home_directory = "/bucket/user1"
+      role_arn       = aws_iam_role.transfer_user_role.arn
+      ssh_pub_keys   = ["ssh-rsa AAAAB3Nz...", "ssh-ed25519 AAAAC3Nz..."]
+    }
+  }
+}
+```
+
+## Example 5
+## identity_provider_type = "API_GATEWAY" with PASSWORD-based authentication
+```hcl
+module "example-transfer" {
+  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
+  name                     = "example-apigw-idp"
+
+  endpoint_type            = "PUBLIC"
+  restricted_mode          = false
+  tags                     = {}
+  transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+  logging_role_arn = aws_iam_role.transfer_logging.arn
+
+  identity_provider_type      = "API_GATEWAY"
+  sftp_authentication_methods = "PASSWORD"
+
+  identity_provider_details = {
+    url             = "https://abc123.execute-api.eu-west-1.amazonaws.com/prod/auth"
+    invocation_role = aws_iam_role.transfer_apigw_invoke.arn
+  }
+
+  users = {
+    user1 = {
+      home_directory = "/bucket/user1"
+      role_arn       = aws_iam_role.transfer_user_role.arn
+      ssh_pub_keys   = [] # optional if password-only auth is used
+    }
+  }
+}
+```
+
+## Example 6
+## identity_provider_type = "AWS_DIRECTORY_SERVICE"
+## (sftp_authentication_methods must be null)
+```hcl
+module "example-transfer" {
+  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
+  name                     = "example-directory-service"
+
+  endpoint_type            = "PUBLIC"
+  restricted_mode          = false
+  tags                     = {}
+  transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+  logging_role_arn = aws_iam_role.transfer_logging.arn
+
+  identity_provider_type      = "AWS_DIRECTORY_SERVICE"
+  sftp_authentication_methods = null
+
+  identity_provider_details = {
+    directory_id = "d-1234567890"
+  }
+
+  users = {
+    user1 = {
+      home_directory = "/bucket/user1"
+      role_arn       = aws_iam_role.transfer_user_role.arn
+      ssh_pub_keys   = ["ssh-ed25519 AAAAC3Nz..."]
+    }
+  }
+}
+```
+
+## Example 7
+## protocols = ["FTPS"]
+## FTPS passive mode configuration with TLS resumption
+```hcl
+module "example-transfer" {
+  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
+  name                     = "example-ftps"
+
+  endpoint_type            = "PUBLIC"
+  restricted_mode          = false
+  tags                     = {}
+  transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+  logging_role_arn = aws_iam_role.transfer_logging.arn
+
+  protocols = ["FTPS"]
+
+  protocol_details = {
+    passive_ip                  = "198.51.100.42"
+    tls_session_resumption_mode = "ENABLED"
+  }
+
+  users = {
+    ftps_user = {
+      home_directory = "/bucket/ftps"
+      role_arn       = aws_iam_role.transfer_user_role.arn
+      ssh_pub_keys   = []
+    }
+  }
+}
+```
+
+## Example 8
+## protocols = ["AS2"]
+## AS2 over HTTP
+```hcl
+module "example-transfer" {
+  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
+  name                     = "example-as2"
+
+  endpoint_type            = "PUBLIC"
+  restricted_mode          = false
+  tags                     = {}
+  transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+  logging_role_arn = aws_iam_role.transfer_logging.arn
+
+  protocols = ["AS2"]
+
+  protocol_details = {
+    as2_transports = ["HTTP"]
+  }
+
+  # AS2 users and partnerships are handled separately
+  users = {}
+}
+```
+
+
+## Example 9
+## protocols = ["SFTP", "FTPS"]
+## Mixed-mode SFTP + FTPS (passive IP applies only to FTPS)
+```hcl
+module "example-transfer" {
+  source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
+  name                     = "example-sftp-ftps"
+
+  endpoint_type            = "PUBLIC"
+  restricted_mode          = false
+  tags                     = {}
+  transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+  logging_role_arn = aws_iam_role.transfer_logging.arn
+
+  protocols = ["SFTP", "FTPS"]
+
+  protocol_details = {
+    passive_ip                  = "198.51.100.88"
+    tls_session_resumption_mode = "ENABLED"
+  }
+
+  identity_provider_type      = "SERVICE_MANAGED"
+  sftp_authentication_methods = null
+
+  users = {
+    user1 = {
+      home_directory = "/bucket/user1"
+      role_arn       = aws_iam_role.transfer_user_role.arn
+      ssh_pub_keys   = ["ssh-ed25519 AAAAC3Nz..."]
     }
   }
 }
