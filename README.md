@@ -289,7 +289,7 @@ module "example-transfer" {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.100 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.100.0 |
 
 ## Modules
 
@@ -301,20 +301,23 @@ No modules.
 |------|------|
 | [aws_transfer_server.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transfer_server) | resource |
 | [aws_transfer_ssh_key.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transfer_ssh_key) | resource |
+| [aws_transfer_tag.custom_hostname](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transfer_tag) | resource |
+| [aws_transfer_tag.route53_zone](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transfer_tag) | resource |
 | [aws_transfer_user.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transfer_user) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_logging_role_arn"></a> [logging\_role\_arn](#input\_logging\_role\_arn) | IAM role ARN assumed by Transfer for CloudWatch logging (created outside this module). | `string` | n/a | yes |
-| <a name="input_name"></a> [name](#input\_name) | A unique name for this transfer server instance. | `string` | n/a | yes |
+| <a name="input_custom_hostname"></a> [custom\_hostname](#input\_custom\_hostname) | Optional custom DNS name to display in the AWS Transfer console Hostname column. | `string` | `null` | no |
 | <a name="input_endpoint_type"></a> [endpoint\_type](#input\_endpoint\_type) | Endpoint type: PUBLIC \| VPC \| VPC\_ENDPOINT | `string` | `"PUBLIC"` | no |
 | <a name="input_host_keys"></a> [host\_keys](#input\_host\_keys) | List of host keys to attach (private keys are write-only at the API). | <pre>list(object({<br/>    private_key = string # Sensitive; inject from CI/env<br/>    description = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_identity_provider_details"></a> [identity\_provider\_details](#input\_identity\_provider\_details) | Optional identity provider details; fields depend on identity\_provider\_type. | <pre>object({<br/>    function_arn    = optional(string) # For AWS_LAMBDA<br/>    invocation_role = optional(string) # For API_GATEWAY<br/>    url             = optional(string) # For API_GATEWAY<br/>    directory_id    = optional(string) # For AWS_DIRECTORY_SERVICE<br/>  })</pre> | `null` | no |
 | <a name="input_identity_provider_type"></a> [identity\_provider\_type](#input\_identity\_provider\_type) | SERVICE\_MANAGED \| AWS\_LAMBDA \| API\_GATEWAY \| AWS\_DIRECTORY\_SERVICE | `string` | `"SERVICE_MANAGED"` | no |
 | <a name="input_logging_policy"></a> [logging\_policy](#input\_logging\_policy) | DEPRECATED: Previously attached to an internal logging role. Provide an external logging\_role\_arn instead. | `string` | `"arn:aws:iam::aws:policy/service-role/AWSTransferLoggingAccess"` | no |
+| <a name="input_logging_role_arn"></a> [logging\_role\_arn](#input\_logging\_role\_arn) | IAM role ARN assumed by Transfer for CloudWatch logging (created outside this module). | `string` | n/a | yes |
 | <a name="input_manage_host_keys"></a> [manage\_host\_keys](#input\_manage\_host\_keys) | If true, attach/import host key(s) to the server using write-only private keys. | `bool` | `false` | no |
+| <a name="input_name"></a> [name](#input\_name) | A unique name for this transfer server instance. Used as the Name tag in the AWS Transfer Family console. | `string` | n/a | yes |
 | <a name="input_on_partial_upload"></a> [on\_partial\_upload](#input\_on\_partial\_upload) | Optional workflow to execute after a file is partially uploaded. | <pre>object({<br/>    execution_role_arn = string<br/>    workflow_id        = string<br/>  })</pre> | `null` | no |
 | <a name="input_on_upload"></a> [on\_upload](#input\_on\_upload) | Optional workflow to execute after a file is uploaded. | <pre>object({<br/>    execution_role_arn = string<br/>    workflow_id        = string<br/>  })</pre> | `null` | no |
 | <a name="input_permissions_boundary"></a> [permissions\_boundary](#input\_permissions\_boundary) | DEPRECATED: Previously applied to IAM roles created by this module. Roles are now external. | `string` | `null` | no |
@@ -324,6 +327,7 @@ No modules.
 | <a name="input_protocol_details"></a> [protocol\_details](#input\_protocol\_details) | Advanced protocol details; validated against protocol and identity settings. Note: FTP is disallowed by this module. | <pre>object({<br/>    as2_transports              = optional(list(string)) # e.g., ["HTTP"] for AS2<br/>    passive_ip                  = optional(string)       # FTPS passive-mode public IP<br/>    tls_session_resumption_mode = optional(string)       # ENABLED | DISABLED (FTPS)<br/>    set_stat_option             = optional(string)       # ENABLE_NO_OP | DISABLED (FTP-only; ignored since FTP is disallowed)<br/>  })</pre> | `null` | no |
 | <a name="input_protocols"></a> [protocols](#input\_protocols) | Enabled protocols (FTP is forbidden): any of SFTP, FTPS, AS2. | `list(string)` | <pre>[<br/>  "SFTP"<br/>]</pre> | no |
 | <a name="input_restricted_mode"></a> [restricted\_mode](#input\_restricted\_mode) | Lock users to logical home directories (LOGICAL) with mappings. | `bool` | `false` | no |
+| <a name="input_route53_hosted_zone_id"></a> [route53\_hosted\_zone\_id](#input\_route53\_hosted\_zone\_id) | Optional Route 53 hosted zone ID for the custom hostname. | `string` | `null` | no |
 | <a name="input_sftp_authentication_methods"></a> [sftp\_authentication\_methods](#input\_sftp\_authentication\_methods) | Optional SFTP authentication mode. PASSWORD-only is forbidden. Valid only with identity\_provider\_type of API\_GATEWAY or AWS\_LAMBDA. | `string` | `null` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to assign to resources. Prefer provider default\_tags at root. | `map(string)` | `{}` | no |
 | <a name="input_transfer_security_policy"></a> [transfer\_security\_policy](#input\_transfer\_security\_policy) | Explicit AWS Transfer security policy name. Pin a current, provider-supported value to avoid drift and satisfy CKV\_AWS\_380. | `string` | `"TransferSecurityPolicy-2025-03"` | no |

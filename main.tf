@@ -177,6 +177,25 @@ resource "aws_transfer_server" "default" {
 #   tags = merge(var.tags, { Name = format("%s-host-key-%d", var.name, count.index) })
 # }
 
+# Normalize to raw hosted zone ID (strip optional "/hostedzone/" prefix).
+locals {
+  _route53_zone_id = var.route53_hosted_zone_id == null ? null : regexreplace(var.route53_hosted_zone_id, "^/hostedzone/", "")
+}
+
+resource "aws_transfer_tag" "custom_hostname" {
+  count        = var.custom_hostname == null ? 0 : 1
+  resource_arn = aws_transfer_server.default.arn
+  key          = "transfer:customHostname"
+  value        = var.custom_hostname
+}
+
+resource "aws_transfer_tag" "route53_zone" {
+  count        = local._route53_zone_id == null ? 0 : 1
+  resource_arn = aws_transfer_server.default.arn
+  key          = "transfer:route53HostedZoneId"
+  value        = local._route53_zone_id
+}
+
 # ── Users (IAM roles provided by caller) ───────────────────────────────────────
 resource "aws_transfer_user" "default" {
   for_each = var.users
