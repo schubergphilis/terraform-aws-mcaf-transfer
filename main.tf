@@ -36,8 +36,8 @@ resource "aws_transfer_server" "default" {
         var.endpoint_type != "VPC" ||
         (
           var.vpc_endpoint != null &&
-          length(try(var.vpc_endpoint.security_group_ids, [])) > 0 &&
-          length(try(var.vpc_endpoint.subnet_ids, [])) > 0 &&
+          length(coalesce(try(var.vpc_endpoint.security_group_ids, []), [])) > 0 &&
+          length(coalesce(try(var.vpc_endpoint.subnet_ids, []), [])) > 0 &&
           try(var.vpc_endpoint.vpc_id, "") != ""
         )
       )
@@ -51,8 +51,8 @@ resource "aws_transfer_server" "default" {
         (
           var.vpc_endpoint != null &&
           try(var.vpc_endpoint.vpc_endpoint_id, "") != "" &&
-          length(try(var.vpc_endpoint.security_group_ids, [])) == 0 &&
-          length(try(var.vpc_endpoint.subnet_ids, [])) == 0 &&
+          length(coalesce(try(var.vpc_endpoint.security_group_ids, []), [])) == 0 &&
+          length(coalesce(try(var.vpc_endpoint.subnet_ids, []), [])) == 0 &&
           try(var.vpc_endpoint.vpc_id, null) == null
         )
       )
