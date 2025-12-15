@@ -38,15 +38,15 @@ variable "vpc_endpoint" {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Protocols & security policy
+# Protocols & security policy (FTP forbidden)
 # ──────────────────────────────────────────────────────────────────────────────
 variable "protocols" {
-  description = "Enabled protocols: any of SFTP, FTPS, FTP, AS2."
+  description = "Enabled protocols (FTP is forbidden): any of SFTP, FTPS, AS2."
   type        = list(string)
   default     = ["SFTP"]
   validation {
-    condition     = alltrue([for p in var.protocols : contains(["SFTP", "FTPS", "FTP", "AS2"], p)]) && length(var.protocols) > 0
-    error_message = "Protocols must be a non-empty list with elements in {SFTP, FTPS, FTP, AS2}."
+    condition     = length(var.protocols) > 0 && alltrue([for p in var.protocols : contains(["SFTP", "FTPS", "AS2"], p)])
+    error_message = "Protocols must be a non-empty list with elements in {SFTP, FTPS, AS2}. FTP is not allowed."
   }
 }
 
@@ -58,11 +58,11 @@ variable "transfer_security_policy" {
   default     = "TransferSecurityPolicy-2025-03"
   description = "Explicit AWS Transfer security policy name. Pin a current, provider-supported value to avoid drift and satisfy CKV_AWS_380."
 
-  # Basic format check: require the canonical prefix and a YYYY-MM suffix segment.
+  # Basic + hardened format check: require canonical prefix and a YYYY-MM suffix for year >= 2023.
   # (Allows FIPS/Restricted/PQ variants too.)
   validation {
-    condition     = can(regex("^TransferSecurityPolicy(-[A-Za-z]+)?-\\d{4}-\\d{2}$", var.transfer_security_policy))
-    error_message = "transfer_security_policy must look like TransferSecurityPolicy-YYYY-MM (optionally with a variant, e.g., -FIPS-YYYY-MM)."
+    condition     = can(regex("^TransferSecurityPolicy(?:-[A-Za-z]+)?-20(2[3-9]|[3-9][0-9])-(0[1-9]|1[0-2])$", var.transfer_security_policy))
+    error_message = "transfer_security_policy must look like TransferSecurityPolicy[-Variant]-YYYY-MM with year >= 2023 (e.g., TransferSecurityPolicy-2025-03 or TransferSecurityPolicy-FIPS-2025-03)."
   }
 }
 
@@ -96,12 +96,12 @@ variable "identity_provider_details" {
 variable "protocol_details" {
   type = object({
     as2_transports              = optional(list(string)) # e.g., ["HTTP"] for AS2
-    passive_ip                  = optional(string)       # FTPS/FTP passive-mode public IP
-    tls_session_resumption_mode = optional(string)       # ENABLED | DISABLED
-    set_stat_option             = optional(string)       # ENABLE_NO_OP | DISABLED
+    passive_ip                  = optional(string)       # FTPS passive-mode public IP
+    tls_session_resumption_mode = optional(string)       # ENABLED | DISABLED (FTPS)
+    set_stat_option             = optional(string)       # ENABLE_NO_OP | DISABLED (FTP-only; ignored since FTP is disallowed)
   })
   default     = null
-  description = "Advanced protocol details; validated against protocol and identity settings."
+  description = "Advanced protocol details; validated against protocol and identity settings. Note: FTP is disallowed by this module."
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -110,14 +110,14 @@ variable "protocol_details" {
 variable "sftp_authentication_methods" {
   type        = string
   default     = null
-  description = "Optional SFTP authentication mode."
+  description = "Optional SFTP authentication mode. PASSWORD-only is forbidden. Valid only with identity_provider_type of API_GATEWAY or AWS_LAMBDA."
 
   validation {
     condition = try(
       var.sftp_authentication_methods == null ||
       contains(
         [
-          "PASSWORD",
+          # "PASSWORD",                # explicitly forbidden
           "PUBLIC_KEY",
           "PUBLIC_KEY_OR_PASSWORD",
         ],
@@ -125,7 +125,7 @@ variable "sftp_authentication_methods" {
       ),
       true
     )
-    error_message = "sftp_authentication_methods must be one of PASSWORD, PUBLIC_KEY, PUBLIC_KEY_OR_PASSWORD, or null."
+    error_message = "sftp_authentication_methods must be one of PUBLIC_KEY, PUBLIC_KEY_OR_PASSWORD, or null. PASSWORD-only is not allowed."
   }
 }
 

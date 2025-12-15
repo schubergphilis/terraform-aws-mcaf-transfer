@@ -68,6 +68,32 @@ resource "aws_transfer_server" "default" {
       )
       error_message = "sftp_authentication_methods is only supported for identity_provider_type of API_GATEWAY or AWS_LAMBDA."
     }
+
+    # Security: explicitly forbid FTP even if validation is bypassed
+    precondition {
+      condition     = !contains(var.protocols, "FTP")
+      error_message = "FTP is not allowed by this module."
+    }
+
+    # Security: forbid PASSWORD-only SFTP auth
+    precondition {
+      condition     = (var.sftp_authentication_methods == null) || (var.sftp_authentication_methods != "PASSWORD")
+      error_message = "sftp_authentication_methods=PASSWORD is not allowed. Use PUBLIC_KEY or PUBLIC_KEY_OR_PASSWORD."
+    }
+
+    # Hardening (recommended): if FTPS is enabled on PUBLIC endpoint, require passive_ip to be set
+    # to avoid ephemeral public address exposure via control connections/NAT.
+    precondition {
+      condition = (
+        !contains(var.protocols, "FTPS") ||
+        var.endpoint_type != "PUBLIC" ||
+        (
+          var.protocol_details != null &&
+          try(var.protocol_details.passive_ip, "") != ""
+        )
+      )
+      error_message = "When protocols include FTPS and endpoint_type=PUBLIC, protocol_details.passive_ip must be set."
+    }
   }
 
   # ── Identity provider & authentication (v5/v6) ──────────────────────────────
