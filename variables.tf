@@ -1,77 +1,27 @@
-variable "logging_policy" {
-  type        = string
-  default     = "arn:aws:iam::aws:policy/service-role/AWSTransferLoggingAccess"
-  description = "Default logging policy for the transfer server"
-}
-
+# ──────────────────────────────────────────────────────────────────────────────
+# Core identifiers
+# ──────────────────────────────────────────────────────────────────────────────
 variable "name" {
   type        = string
-  description = "A unique name for this transfer server instance"
-}
-
-variable "on_upload" {
-  type = object({
-    execution_role = string
-    workflow_id    = string
-  })
-  default     = null
-  description = "Optional trigger to execute a workflow after a file is uploaded"
-}
-
-variable "on_partial_upload" {
-  type = object({
-    execution_role = string
-    workflow_id    = string
-  })
-  default     = null
-  description = "Optional trigger to execute a workflow after a file is partially uploaded"
-}
-
-variable "permissions_boundary" {
-  type        = string
-  default     = null
-  description = "The permissions boundary to set on the role"
-}
-
-variable "pre_login_banner" {
-  type        = string
-  default     = null
-  description = "Login banner presented before logging on to the AWS Transfer server"
-}
-
-variable "restricted_mode" {
-  type        = bool
-  default     = false
-  description = "Lock down all users to their home directory."
+  description = "A unique name for this transfer server instance."
 }
 
 variable "tags" {
   type        = map(string)
-  description = "A mapping of tags to assign to the resources"
+  default     = {}
+  description = "Tags to assign to resources. Prefer provider default_tags at root."
 }
 
-variable "transfer_security_policy" {
-  type        = string
-  default     = null
-  description = "Define the set of cryptographic algorithms accepted by the service."
-}
-
-variable "users" {
-  type = map(object({
-    home_directory = string
-    role_policy    = string
-    ssh_pub_keys   = list(string)
-  }))
-  description = "A map with transfer users and configuration details"
-}
-
+# ──────────────────────────────────────────────────────────────────────────────
+# Endpoint configuration
+# ──────────────────────────────────────────────────────────────────────────────
 variable "endpoint_type" {
-  description = "Type of endpoint"
+  description = "Endpoint type: PUBLIC | VPC | VPC_ENDPOINT"
   type        = string
   default     = "PUBLIC"
   validation {
     condition     = contains(["PUBLIC", "VPC", "VPC_ENDPOINT"], var.endpoint_type)
-    error_message = "Allowed values for endpoint_type are PUBLIC, VPC, or VPC_ENDPOINT"
+    error_message = "Allowed values: PUBLIC, VPC, or VPC_ENDPOINT."
   }
 }
 
@@ -84,5 +34,181 @@ variable "vpc_endpoint" {
     vpc_id                 = optional(string)
   })
   default     = null
-  description = "Optional VPC endpoint settings for your SFTP server"
+  description = "Endpoint details depending on endpoint_type. For VPC, set vpc_id, subnet_ids, security_group_ids[, address_allocation_ids]. For VPC_ENDPOINT, set vpc_endpoint_id."
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Protocols & security policy (FTP forbidden)
+# ──────────────────────────────────────────────────────────────────────────────
+variable "protocols" {
+  description = "Enabled protocols (FTP is forbidden): any of SFTP, FTPS, AS2."
+  type        = list(string)
+  default     = ["SFTP"]
+  validation {
+    condition     = length(var.protocols) > 0 && alltrue([for p in var.protocols : contains(["SFTP", "FTPS", "AS2"], p)])
+    error_message = "Protocols must be a non-empty list with elements in {SFTP, FTPS, AS2}. FTP is not allowed."
+  }
+}
+
+variable "transfer_security_policy" {
+  type = string
+  # Choose a provider-supported policy your org approves.
+  # Examples: TransferSecurityPolicy-2025-03, TransferSecurityPolicy-2024-01,
+  # TransferSecurityPolicy-FIPS-2025-03, TransferSecurityPolicy-Restricted-2024-06
+  default     = "TransferSecurityPolicy-2025-03"
+  description = "Explicit AWS Transfer security policy name. Pin a current, provider-supported value to avoid drift and satisfy CKV_AWS_380."
+
+  # Basic + hardened format check: require canonical prefix and a YYYY-MM suffix for year >= 2023.
+  # (Allows FIPS/Restricted/PQ variants too.)
+  validation {
+    condition     = can(regex("^TransferSecurityPolicy(?:-[A-Za-z]+)?-20(2[3-9]|[3-9][0-9])-(0[1-9]|1[0-2])$", var.transfer_security_policy))
+    error_message = "transfer_security_policy must look like TransferSecurityPolicy[-Variant]-YYYY-MM with year >= 2023 (e.g., TransferSecurityPolicy-2025-03 or TransferSecurityPolicy-FIPS-2025-03)."
+  }
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Identity provider
+# ──────────────────────────────────────────────────────────────────────────────
+variable "identity_provider_type" {
+  type        = string
+  default     = "SERVICE_MANAGED"
+  description = "SERVICE_MANAGED | AWS_LAMBDA | API_GATEWAY | AWS_DIRECTORY_SERVICE"
+  validation {
+    condition     = contains(["SERVICE_MANAGED", "AWS_LAMBDA", "API_GATEWAY", "AWS_DIRECTORY_SERVICE"], var.identity_provider_type)
+    error_message = "identity_provider_type must be one of SERVICE_MANAGED, AWS_LAMBDA, API_GATEWAY, AWS_DIRECTORY_SERVICE."
+  }
+}
+
+variable "identity_provider_details" {
+  type = object({
+    function_arn    = optional(string) # For AWS_LAMBDA
+    invocation_role = optional(string) # For API_GATEWAY
+    url             = optional(string) # For API_GATEWAY
+    directory_id    = optional(string) # For AWS_DIRECTORY_SERVICE
+  })
+  default     = null
+  description = "Optional identity provider details; fields depend on identity_provider_type."
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Protocol details
+# ──────────────────────────────────────────────────────────────────────────────
+variable "protocol_details" {
+  type = object({
+    as2_transports              = optional(list(string)) # e.g., ["HTTP"] for AS2
+    passive_ip                  = optional(string)       # FTPS passive-mode public IP
+    tls_session_resumption_mode = optional(string)       # ENABLED | DISABLED (FTPS)
+    set_stat_option             = optional(string)       # ENABLE_NO_OP | DISABLED (FTP-only; ignored since FTP is disallowed)
+  })
+  default     = null
+  description = "Advanced protocol details; validated against protocol and identity settings. Note: FTP is disallowed by this module."
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SFTP authentication (top-level; not part of protocol_details)
+# ──────────────────────────────────────────────────────────────────────────────
+variable "sftp_authentication_methods" {
+  type        = string
+  default     = null
+  description = "Optional SFTP authentication mode. PASSWORD-only is forbidden. Valid only with identity_provider_type of API_GATEWAY or AWS_LAMBDA."
+
+  validation {
+    condition = try(
+      var.sftp_authentication_methods == null ||
+      contains(
+        [
+          # "PASSWORD",                # explicitly forbidden
+          "PUBLIC_KEY",
+          "PUBLIC_KEY_OR_PASSWORD",
+        ],
+        var.sftp_authentication_methods
+      ),
+      true
+    )
+    error_message = "sftp_authentication_methods must be one of PUBLIC_KEY, PUBLIC_KEY_OR_PASSWORD, or null. PASSWORD-only is not allowed."
+  }
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Banners
+# ──────────────────────────────────────────────────────────────────────────────
+variable "pre_authentication_login_banner" {
+  type        = string
+  default     = null
+  description = "Banner shown before authentication."
+}
+
+variable "post_authentication_login_banner" {
+  type        = string
+  default     = null
+  description = "Banner shown after authentication."
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Logging (IAM decoupled)
+# ──────────────────────────────────────────────────────────────────────────────
+variable "logging_role_arn" {
+  type        = string
+  description = "IAM role ARN assumed by Transfer for CloudWatch logging (created outside this module)."
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Users (IAM decoupled)
+# ──────────────────────────────────────────────────────────────────────────────
+variable "restricted_mode" {
+  type        = bool
+  default     = false
+  description = "Lock users to logical home directories (LOGICAL) with mappings."
+}
+
+variable "users" {
+  type = map(object({
+    home_directory = string
+    role_arn       = string # External IAM role (created in your IAM module)
+    ssh_pub_keys   = list(string)
+  }))
+  default     = {}
+  description = "Transfer users: home_directory, role_arn, and SSH public keys."
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Workflows (IAM decoupled)
+# ──────────────────────────────────────────────────────────────────────────────
+variable "on_upload" {
+  type = object({
+    execution_role_arn = string
+    workflow_id        = string
+  })
+  default     = null
+  description = "Optional workflow to execute after a file is uploaded."
+}
+
+variable "on_partial_upload" {
+  type = object({
+    execution_role_arn = string
+    workflow_id        = string
+  })
+  default     = null
+  description = "Optional workflow to execute after a file is partially uploaded."
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Host key safeguard (manage host identity via write-only API)
+# ──────────────────────────────────────────────────────────────────────────────
+# tflint-ignore: terraform_typed_variables,terraform_unused_declarations
+variable "manage_host_keys" {
+  type        = bool
+  default     = false
+  description = "If true, attach/import host key(s) to the server using write-only private keys."
+}
+
+# tflint-ignore: terraform_typed_variables,terraform_unused_declarations
+variable "host_keys" {
+  type = list(object({
+    private_key = string # Sensitive; inject from CI/env
+    description = optional(string)
+  }))
+  default     = []
+  sensitive   = true
+  description = "List of host keys to attach (private keys are write-only at the API)."
 }
