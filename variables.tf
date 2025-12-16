@@ -3,7 +3,12 @@
 # ──────────────────────────────────────────────────────────────────────────────
 variable "name" {
   type        = string
-  description = "A unique name for this transfer server instance."
+  description = "A unique name for this transfer server instance. Used as the Name tag in the AWS Transfer Family console."
+
+  validation {
+    condition     = can(regex("^[A-Za-z][A-Za-z0-9-]{0,62}$", var.name))
+    error_message = "name must start with a letter and contain only letters, numbers, and hyphens, with a maximum length of 63 characters."
+  }
 }
 
 variable "tags" {
@@ -191,6 +196,47 @@ variable "on_partial_upload" {
   default     = null
   description = "Optional workflow to execute after a file is partially uploaded."
 }
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Custom hostname (console display / optional Route 53 integration)
+# ──────────────────────────────────────────────────────────────────────────────
+
+variable "custom_hostname" {
+  type        = string
+  default     = null
+  description = "Optional custom DNS name to display in the AWS Transfer console Hostname column."
+
+  # Simple DNS-safe validation
+  validation {
+    condition = (
+      var.custom_hostname == null ||
+      can(regex("^[a-zA-Z0-9.-]+$", var.custom_hostname))
+    )
+    error_message = "custom_hostname must contain only letters, numbers, dots, and hyphens."
+  }
+}
+
+variable "route53_hosted_zone_id" {
+  type        = string
+  default     = null
+  description = "Optional Route 53 hosted zone ID for the custom hostname."
+
+  validation {
+    condition = (
+      # OK if unset
+      var.route53_hosted_zone_id == null
+      ||
+      (
+        # Must be valid ID format
+        can(regex("^(/hostedzone/)?Z[A-Z0-9]+$", var.route53_hosted_zone_id))
+        # And a hostname MUST be set if a zone is set
+        && var.custom_hostname != null
+      )
+    )
+    error_message = "If route53_hosted_zone_id is set, it must be a valid Route 53 zone ID and custom_hostname must also be provided."
+  }
+}
+
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Host key safeguard (manage host identity via write-only API)
