@@ -36,3 +36,9 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# Local Python virtual environments
+.venv/
+
+# pre-commit local cache
+.pre-commit-cache/

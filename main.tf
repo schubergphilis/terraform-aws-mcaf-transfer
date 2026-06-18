@@ -4,6 +4,9 @@ locals {
   on_partial_upload = var.on_partial_upload != null ? { create = true } : {}
   workflow_details  = length(merge(local.on_upload, local.on_partial_upload)) > 0 ? { create = true } : {}
 
+  # Normalize Route 53 zone ID to its raw form (strip optional "/hostedzone/" prefix).
+  route53_zone_id = var.route53_hosted_zone_id == null ? null : replace(var.route53_hosted_zone_id, "/^\\/hostedzone\\//", "")
+
   # Flatten users' SSH keys into a stable map
   user_ssh_keys = {
     for item in flatten([
@@ -21,8 +24,11 @@ locals {
 resource "aws_transfer_server" "default" {
   #checkov:skip=CKV_AWS_164: PUBLIC endpoint is required for our SFTP use case
   lifecycle {
-    # keep host key safe
-    # prevent_destroy = true
+    # prevent_destroy is intentionally NOT set: it must be a literal (cannot be
+    # made conditional via a variable), so enabling it would block destroy and
+    # replacement for every consumer of this module. Callers needing host-key
+    # stability should pin it via manage_host_keys/host_keys or guard the server
+    # in their own configuration.
 
     # PUBLIC → vpc_endpoint must be null
     precondition {
@@ -198,11 +204,6 @@ resource "aws_transfer_host_key" "managed" {
   tags = merge(var.tags, { Name = format("%s-host-key-%d", var.name, count.index) })
 }
 
-# Normalize to raw hosted zone ID (strip optional "/hostedzone/" prefix).
-locals {
-  _route53_zone_id = var.route53_hosted_zone_id == null ? null : regexreplace(var.route53_hosted_zone_id, "^/hostedzone/", "")
-}
-
 resource "aws_transfer_tag" "custom_hostname" {
   count        = var.custom_hostname == null ? 0 : 1
   resource_arn = aws_transfer_server.default.arn
@@ -211,10 +212,10 @@ resource "aws_transfer_tag" "custom_hostname" {
 }
 
 resource "aws_transfer_tag" "route53_zone" {
-  count        = local._route53_zone_id == null ? 0 : 1
+  count        = local.route53_zone_id == null ? 0 : 1
   resource_arn = aws_transfer_server.default.arn
   key          = "transfer:route53HostedZoneId"
-  value        = local._route53_zone_id
+  value        = local.route53_zone_id
 }
 
 # ── Users (IAM roles provided by caller) ───────────────────────────────────────

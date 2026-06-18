@@ -221,13 +221,14 @@ variable "custom_hostname" {
   default     = null
   description = "Optional custom DNS name to display in the AWS Transfer console Hostname column."
 
-  # Simple DNS-safe validation
+  # DNS hostname validation: dot-separated labels, each 1-63 chars, starting and
+  # ending alphanumeric (no leading/trailing dots or hyphens).
   validation {
     condition = (
       var.custom_hostname == null ||
-      can(regex("^[a-zA-Z0-9.-]+$", var.custom_hostname))
+      can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$", var.custom_hostname))
     )
-    error_message = "custom_hostname must contain only letters, numbers, dots, and hyphens."
+    error_message = "custom_hostname must be a valid DNS name: dot-separated labels of letters, numbers, and hyphens, each starting and ending with an alphanumeric character."
   }
 }
 
