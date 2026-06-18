@@ -108,8 +108,9 @@ resource "aws_transfer_server" "default" {
   directory_id    = try(var.identity_provider_details.directory_id, null)    # AWS_DIRECTORY_SERVICE
 
   # ── Endpoint & logging ──────────────────────────────────────────────────────
-  endpoint_type = var.endpoint_type
-  logging_role  = var.logging_role_arn
+  endpoint_type               = var.endpoint_type
+  logging_role                = var.logging_role_arn
+  structured_log_destinations = var.structured_log_destinations
 
   # ── Banners & security policy ───────────────────────────────────────────────
   pre_authentication_login_banner  = var.pre_authentication_login_banner
@@ -155,27 +156,47 @@ resource "aws_transfer_server" "default" {
     }
   }
 
-  # ── Protocol details (FTPS/FTP/AS2 options; v5 and v6) ──────────────────────
+  # ── Protocol details (FTPS options) ─────────────────────────────────────────
   dynamic "protocol_details" {
     for_each = var.protocol_details == null ? {} : { create = true }
     content {
-      as2_transports              = try(var.protocol_details.as2_transports, null)
       passive_ip                  = try(var.protocol_details.passive_ip, null)
       tls_session_resumption_mode = try(var.protocol_details.tls_session_resumption_mode, null)
-      set_stat_option             = try(var.protocol_details.set_stat_option, null)
-      # v6 note: sftp_authentication_methods remains TOP-LEVEL (not here).
+      # Note: sftp_authentication_methods is TOP-LEVEL (not here).
+    }
+  }
+
+  # ── S3 storage options ───────────────────────────────────────────────────────
+  dynamic "s3_storage_options" {
+    for_each = var.s3_storage_options == null ? {} : { create = true }
+    content {
+      directory_listing_optimization = try(var.s3_storage_options.directory_listing_optimization, null)
     }
   }
 }
 
-# ── Optional: explicit server host keys (commented for TF 1.6 bootstrap) ──────
-# resource "aws_transfer_host_key" "managed" {
-#   count = var.manage_host_keys ? length(var.host_keys) : 0
-#   server_id     = aws_transfer_server.default.id
-#   host_key_body = var.host_keys[count.index].private_key
-#   description   = try(var.host_keys[count.index].description, null)
-#   tags = merge(var.tags, { Name = format("%s-host-key-%d", var.name, count.index) })
-# }
+# ── VPC_ENDPOINT is deprecated by AWS: new servers can't use it and it's absent
+#    in newer regions. Emit a non-blocking warning steering callers to VPC. ─────
+check "vpc_endpoint_deprecated" {
+  assert {
+    condition     = var.endpoint_type != "VPC_ENDPOINT"
+    error_message = "endpoint_type=VPC_ENDPOINT is deprecated by AWS (new servers cannot be created with it and it is unavailable in newer regions). Migrate to endpoint_type=VPC."
+  }
+}
+
+# ── Optional: explicit server host keys ───────────────────────────────────────
+# Private key is supplied via the write-only argument host_key_body_wo (TF 1.11+),
+# so it is never persisted to state or plan. There is no _wo_version companion on
+# this resource; rotate a key by replacing the corresponding host_keys element.
+resource "aws_transfer_host_key" "managed" {
+  count = var.manage_host_keys ? length(var.host_keys) : 0
+
+  server_id        = aws_transfer_server.default.id
+  host_key_body_wo = var.host_keys[count.index].private_key
+  description      = try(var.host_keys[count.index].description, null)
+
+  tags = merge(var.tags, { Name = format("%s-host-key-%d", var.name, count.index) })
+}
 
 # ── Users (IAM roles provided by caller) ───────────────────────────────────────
 resource "aws_transfer_user" "default" {
@@ -205,4 +226,11 @@ resource "aws_transfer_ssh_key" "default" {
   server_id = aws_transfer_server.default.id
   user_name = aws_transfer_user.default[each.value.user].user_name
   body      = each.value.ssh_key
+
+  lifecycle {
+    precondition {
+      condition     = var.identity_provider_type == "SERVICE_MANAGED"
+      error_message = "SSH public keys (ssh_pub_keys on users) are only supported when identity_provider_type=SERVICE_MANAGED. Remove ssh_pub_keys or switch the identity provider."
+    }
+  }
 }

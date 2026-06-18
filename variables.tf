@@ -41,12 +41,12 @@ variable "vpc_endpoint" {
 # Protocols & security policy (FTP forbidden)
 # ──────────────────────────────────────────────────────────────────────────────
 variable "protocols" {
-  description = "Enabled protocols (FTP is forbidden): any of SFTP, FTPS, AS2."
+  description = "Enabled protocols: any of SFTP, FTPS. FTP and AS2 are not supported by this module."
   type        = list(string)
   default     = ["SFTP"]
   validation {
-    condition     = length(var.protocols) > 0 && alltrue([for p in var.protocols : contains(["SFTP", "FTPS", "AS2"], p)])
-    error_message = "Protocols must be a non-empty list with elements in {SFTP, FTPS, AS2}. FTP is not allowed."
+    condition     = length(var.protocols) > 0 && alltrue([for p in var.protocols : contains(["SFTP", "FTPS"], p)])
+    error_message = "Protocols must be a non-empty list with elements in {SFTP, FTPS}. FTP and AS2 are not allowed."
   }
 }
 
@@ -61,8 +61,8 @@ variable "transfer_security_policy" {
   # Basic + hardened format check: require canonical prefix and a YYYY-MM suffix for year >= 2023.
   # (Allows FIPS/Restricted/PQ variants too.)
   validation {
-    condition     = can(regex("^TransferSecurityPolicy(?:-[A-Za-z]+)?-20(2[3-9]|[3-9][0-9])-(0[1-9]|1[0-2])$", var.transfer_security_policy))
-    error_message = "transfer_security_policy must look like TransferSecurityPolicy[-Variant]-YYYY-MM with year >= 2023 (e.g., TransferSecurityPolicy-2025-03 or TransferSecurityPolicy-FIPS-2025-03)."
+    condition     = can(regex("^TransferSecurityPolicy(?:-[A-Za-z0-9]+)?-20(2[3-9]|[3-9][0-9])-(0[1-9]|1[0-2])$", var.transfer_security_policy))
+    error_message = "transfer_security_policy must look like TransferSecurityPolicy[-Variant]-YYYY-MM with year >= 2023 (e.g., TransferSecurityPolicy-2025-03, TransferSecurityPolicy-FIPS-2025-03, or TransferSecurityPolicy-AS2Restricted-2025-07)."
   }
 }
 
@@ -95,13 +95,11 @@ variable "identity_provider_details" {
 # ──────────────────────────────────────────────────────────────────────────────
 variable "protocol_details" {
   type = object({
-    as2_transports              = optional(list(string)) # e.g., ["HTTP"] for AS2
-    passive_ip                  = optional(string)       # FTPS passive-mode public IP
-    tls_session_resumption_mode = optional(string)       # ENABLED | DISABLED (FTPS)
-    set_stat_option             = optional(string)       # ENABLE_NO_OP | DISABLED (FTP-only; ignored since FTP is disallowed)
+    passive_ip                  = optional(string) # FTPS passive-mode public IP
+    tls_session_resumption_mode = optional(string) # ENABLED | DISABLED (FTPS)
   })
   default     = null
-  description = "Advanced protocol details; validated against protocol and identity settings. Note: FTP is disallowed by this module."
+  description = "Advanced FTPS protocol details. Note: FTP and AS2 are not supported by this module."
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -150,6 +148,23 @@ variable "post_authentication_login_banner" {
 variable "logging_role_arn" {
   type        = string
   description = "IAM role ARN assumed by Transfer for CloudWatch logging (created outside this module)."
+}
+
+variable "structured_log_destinations" {
+  type        = set(string)
+  default     = null
+  description = "Set of CloudWatch Logs log-group ARNs for structured (JSON) logging. Leave null to use unstructured logging."
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# S3 storage options
+# ──────────────────────────────────────────────────────────────────────────────
+variable "s3_storage_options" {
+  type = object({
+    directory_listing_optimization = optional(string) # ENABLED | DISABLED
+  })
+  default     = null
+  description = "S3 storage options. Set directory_listing_optimization to ENABLED to speed up directory listings on S3-backed servers."
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -210,5 +225,5 @@ variable "host_keys" {
   }))
   default     = []
   sensitive   = true
-  description = "List of host keys to attach (private keys are write-only at the API)."
+  description = "List of host keys to attach. Private keys are passed via the write-only host_key_body_wo argument (TF 1.11+) and are never stored in state or plan."
 }
