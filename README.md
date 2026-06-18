@@ -280,15 +280,15 @@ module "example-transfer" {
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.11 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.51.0 |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 6.0 |
 
 ## Modules
 
@@ -297,7 +297,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_transfer_host_key.managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transfer_host_key) | resource |
 | [aws_transfer_server.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transfer_server) | resource |
 | [aws_transfer_ssh_key.default](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/transfer_ssh_key) | resource |
@@ -308,16 +308,16 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
+| <a name="input_logging_role_arn"></a> [logging\_role\_arn](#input\_logging\_role\_arn) | IAM role ARN assumed by Transfer for CloudWatch logging (created outside this module). | `string` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | A unique name for this transfer server instance. Used as the Name tag in the AWS Transfer Family console. | `string` | n/a | yes |
 | <a name="input_custom_hostname"></a> [custom\_hostname](#input\_custom\_hostname) | Optional custom DNS name to display in the AWS Transfer console Hostname column. | `string` | `null` | no |
 | <a name="input_endpoint_type"></a> [endpoint\_type](#input\_endpoint\_type) | Endpoint type: PUBLIC \| VPC \| VPC\_ENDPOINT | `string` | `"PUBLIC"` | no |
 | <a name="input_host_keys"></a> [host\_keys](#input\_host\_keys) | List of host keys to attach. Private keys are passed via the write-only host\_key\_body\_wo argument (TF 1.11+) and are never stored in state or plan. | <pre>list(object({<br/>    private_key = string # Sensitive; inject from CI/env<br/>    description = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_identity_provider_details"></a> [identity\_provider\_details](#input\_identity\_provider\_details) | Optional identity provider details; fields depend on identity\_provider\_type. | <pre>object({<br/>    function_arn    = optional(string) # For AWS_LAMBDA<br/>    invocation_role = optional(string) # For API_GATEWAY<br/>    url             = optional(string) # For API_GATEWAY<br/>    directory_id    = optional(string) # For AWS_DIRECTORY_SERVICE<br/>  })</pre> | `null` | no |
 | <a name="input_identity_provider_type"></a> [identity\_provider\_type](#input\_identity\_provider\_type) | SERVICE\_MANAGED \| AWS\_LAMBDA \| API\_GATEWAY \| AWS\_DIRECTORY\_SERVICE | `string` | `"SERVICE_MANAGED"` | no |
 | <a name="input_logging_policy"></a> [logging\_policy](#input\_logging\_policy) | DEPRECATED: Previously attached to an internal logging role. Provide an external logging\_role\_arn instead. | `string` | `"arn:aws:iam::aws:policy/service-role/AWSTransferLoggingAccess"` | no |
-| <a name="input_logging_role_arn"></a> [logging\_role\_arn](#input\_logging\_role\_arn) | IAM role ARN assumed by Transfer for CloudWatch logging (created outside this module). | `string` | n/a | yes |
 | <a name="input_manage_host_keys"></a> [manage\_host\_keys](#input\_manage\_host\_keys) | If true, attach/import host key(s) to the server using write-only private keys. | `bool` | `false` | no |
-| <a name="input_name"></a> [name](#input\_name) | A unique name for this transfer server instance. Used as the Name tag in the AWS Transfer Family console. | `string` | n/a | yes |
 | <a name="input_on_partial_upload"></a> [on\_partial\_upload](#input\_on\_partial\_upload) | Optional workflow to execute after a file is partially uploaded. | <pre>object({<br/>    execution_role_arn = string<br/>    workflow_id        = string<br/>  })</pre> | `null` | no |
 | <a name="input_on_upload"></a> [on\_upload](#input\_on\_upload) | Optional workflow to execute after a file is uploaded. | <pre>object({<br/>    execution_role_arn = string<br/>    workflow_id        = string<br/>  })</pre> | `null` | no |
 | <a name="input_permissions_boundary"></a> [permissions\_boundary](#input\_permissions\_boundary) | DEPRECATED: Previously applied to IAM roles created by this module. Roles are now external. | `string` | `null` | no |
@@ -339,7 +339,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_host_key_ids"></a> [host\_key\_ids](#output\_host\_key\_ids) | IDs of managed host keys attached to this server. |
 | <a name="output_logging_policy_deprecation"></a> [logging\_policy\_deprecation](#output\_logging\_policy\_deprecation) | Deprecation message for logging\_policy. |
 | <a name="output_permissions_boundary_deprecation"></a> [permissions\_boundary\_deprecation](#output\_permissions\_boundary\_deprecation) | Deprecation message for permissions\_boundary. |
