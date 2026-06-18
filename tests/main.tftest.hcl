@@ -141,6 +141,9 @@ run "vpc_interface_endpoint_type" {
     error_message = "Expected vpc_endpoint_id to match, got: ${aws_transfer_server.default.endpoint_details[0].vpc_endpoint_id}"
   }
 
+  # VPC_ENDPOINT is deprecated: the module's check block emits a warning here.
+  expect_failures = [check.vpc_endpoint_deprecated]
+
   # NOTE: Do not assert emptiness of security_group_ids/subnet_ids/vpc_id here:
   # under provider v5 these can be unknown at plan time and cause test failures.
 }
@@ -271,40 +274,6 @@ run "ftps_details" {
 }
 
 # -----------------------------------------------------------------------------
-# AS2 protocol_details
-# -----------------------------------------------------------------------------
-run "as2_details" {
-  command = plan
-
-  module {
-    source = "./"
-  }
-
-  variables {
-    name                     = "example-as2"
-    logging_role_arn         = "arn:aws:iam::123456789012:role/transfer-logging"
-    transfer_security_policy = "TransferSecurityPolicy-2025-03"
-
-    protocols = ["AS2"]
-
-    protocol_details = {
-      as2_transports = ["HTTP"]
-    }
-  }
-
-  assert {
-    condition     = jsonencode(aws_transfer_server.default.protocols) == jsonencode(["AS2"])
-    error_message = "Expected AS2 protocol enabled, got: ${jsonencode(aws_transfer_server.default.protocols)}"
-  }
-
-  # as2_transports is a set, so check membership instead of indexing
-  assert {
-    condition     = contains(aws_transfer_server.default.protocol_details[0].as2_transports, "HTTP")
-    error_message = "Expected as2_transports to include HTTP, got: ${jsonencode(aws_transfer_server.default.protocol_details[0].as2_transports)}"
-  }
-}
-
-# -----------------------------------------------------------------------------
 # Mixed protocols SFTP + FTPS with protocol_details for FTPS
 # -----------------------------------------------------------------------------
 run "sftp_ftps_mixed" {
@@ -344,4 +313,84 @@ run "sftp_ftps_mixed" {
     condition     = aws_transfer_server.default.identity_provider_type == "SERVICE_MANAGED"
     error_message = "Expected SERVICE_MANAGED identity provider, got: ${aws_transfer_server.default.identity_provider_type}"
   }
+}
+
+# -----------------------------------------------------------------------------
+# Negative: FTP is rejected by the protocols variable validation
+# -----------------------------------------------------------------------------
+run "reject_ftp_protocol" {
+  command = plan
+
+  module {
+    source = "./"
+  }
+
+  variables {
+    name             = "example-ftp"
+    logging_role_arn = "arn:aws:iam::123456789012:role/transfer-logging"
+    protocols        = ["FTP"]
+  }
+
+  expect_failures = [var.protocols]
+}
+
+# -----------------------------------------------------------------------------
+# Negative: AS2 is no longer supported and rejected by variable validation
+# -----------------------------------------------------------------------------
+run "reject_as2_protocol" {
+  command = plan
+
+  module {
+    source = "./"
+  }
+
+  variables {
+    name             = "example-as2"
+    logging_role_arn = "arn:aws:iam::123456789012:role/transfer-logging"
+    protocols        = ["AS2"]
+  }
+
+  expect_failures = [var.protocols]
+}
+
+# -----------------------------------------------------------------------------
+# Negative: PASSWORD-only SFTP auth is rejected by variable validation
+# -----------------------------------------------------------------------------
+run "reject_password_only_auth" {
+  command = plan
+
+  module {
+    source = "./"
+  }
+
+  variables {
+    name                        = "example-password"
+    logging_role_arn            = "arn:aws:iam::123456789012:role/transfer-logging"
+    identity_provider_type      = "AWS_LAMBDA"
+    sftp_authentication_methods = "PASSWORD"
+  }
+
+  expect_failures = [var.sftp_authentication_methods]
+}
+
+# -----------------------------------------------------------------------------
+# Negative: PUBLIC endpoint with vpc_endpoint set violates a server precondition
+# -----------------------------------------------------------------------------
+run "reject_public_with_vpc_endpoint" {
+  command = plan
+
+  module {
+    source = "./"
+  }
+
+  variables {
+    name             = "example-bad-public"
+    logging_role_arn = "arn:aws:iam::123456789012:role/transfer-logging"
+    endpoint_type    = "PUBLIC"
+    vpc_endpoint = {
+      vpc_endpoint_id = "vpce-0abc0123456789def"
+    }
+  }
+
+  expect_failures = [aws_transfer_server.default]
 }

@@ -13,7 +13,7 @@ output "user_arns" {
   description = "ARNs of the transfer users."
 }
 
-# output "host_key_ids" {
-#   value       = var.manage_host_keys ? [for hk in aws_transfer_host_key.managed : hk.host_key_id] : []
-#   description = "IDs of managed host keys attached to this server."
-# }
+output "host_key_ids" {
+  value       = aws_transfer_host_key.managed[*].host_key_id
+  description = "IDs of managed host keys attached to this server."
+}
