@@ -215,8 +215,15 @@ module "example-transfer" {
 ```
 
 ## Example 8
-## protocols = ["AS2"]
-## AS2 over HTTP
+
+`protocols = ["AS2"]` — AS2 over HTTP.
+
+> **Scope note:** This module only enables the AS2 protocol on the Transfer
+> server (`protocols` + `protocol_details.as2_transports`). The AS2 messaging
+> resources — `aws_transfer_connector`, `aws_transfer_agreement`,
+> `aws_transfer_profile`, and `aws_transfer_certificate` — are **not** managed
+> here and must be created separately. SFTP-style `users` do not apply to AS2.
+
 ```hcl
 module "example-transfer" {
   source                   = "github.com/schubergphilis/terraform-aws-mcaf-transfer"
@@ -235,7 +242,8 @@ module "example-transfer" {
     as2_transports = ["HTTP"]
   }
 
-  # AS2 users and partnerships are handled separately
+  # AS2 agreements, connectors, profiles, and certificates are managed outside
+  # this module. No SFTP users are defined for an AS2-only server.
   users = {}
 }
 ```
@@ -324,8 +332,8 @@ No modules.
 | <a name="input_post_authentication_login_banner"></a> [post\_authentication\_login\_banner](#input\_post\_authentication\_login\_banner) | Banner shown after authentication. | `string` | `null` | no |
 | <a name="input_pre_authentication_login_banner"></a> [pre\_authentication\_login\_banner](#input\_pre\_authentication\_login\_banner) | Banner shown before authentication. | `string` | `null` | no |
 | <a name="input_pre_login_banner"></a> [pre\_login\_banner](#input\_pre\_login\_banner) | DEPRECATED: Replaced by 'pre\_authentication\_login\_banner'. | `string` | `null` | no |
-| <a name="input_protocol_details"></a> [protocol\_details](#input\_protocol\_details) | Advanced FTPS protocol details. Note: FTP and AS2 are not supported by this module. | <pre>object({<br/>    passive_ip                  = optional(string) # FTPS passive-mode public IP<br/>    tls_session_resumption_mode = optional(string) # ENABLED | DISABLED (FTPS)<br/>  })</pre> | `null` | no |
-| <a name="input_protocols"></a> [protocols](#input\_protocols) | Enabled protocols: any of SFTP, FTPS. FTP and AS2 are not supported by this module. | `list(string)` | <pre>[<br/>  "SFTP"<br/>]</pre> | no |
+| <a name="input_protocol_details"></a> [protocol\_details](#input\_protocol\_details) | Advanced protocol details for FTPS and AS2. Note: FTP is not supported by this module. | <pre>object({<br/>    as2_transports              = optional(list(string)) # AS2 transport, e.g. ["HTTP"]<br/>    passive_ip                  = optional(string)       # FTPS passive-mode public IP<br/>    tls_session_resumption_mode = optional(string)       # ENABLED | DISABLED (FTPS)<br/>  })</pre> | `null` | no |
+| <a name="input_protocols"></a> [protocols](#input\_protocols) | Enabled protocols (FTP is forbidden): any of SFTP, FTPS, AS2. Note: AS2 only enables the protocol on the server; agreements, connectors, profiles, and certificates are managed outside this module. | `list(string)` | <pre>[<br/>  "SFTP"<br/>]</pre> | no |
 | <a name="input_restricted_mode"></a> [restricted\_mode](#input\_restricted\_mode) | Lock users to logical home directories (LOGICAL) with mappings. | `bool` | `false` | no |
 | <a name="input_route53_hosted_zone_id"></a> [route53\_hosted\_zone\_id](#input\_route53\_hosted\_zone\_id) | Optional Route 53 hosted zone ID for the custom hostname. | `string` | `null` | no |
 | <a name="input_s3_storage_options"></a> [s3\_storage\_options](#input\_s3\_storage\_options) | S3 storage options. Set directory\_listing\_optimization to ENABLED to speed up directory listings on S3-backed servers. | <pre>object({<br/>    directory_listing_optimization = optional(string) # ENABLED | DISABLED<br/>  })</pre> | `null` | no |

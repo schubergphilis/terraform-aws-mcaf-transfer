@@ -335,9 +335,9 @@ run "reject_ftp_protocol" {
 }
 
 # -----------------------------------------------------------------------------
-# Negative: AS2 is no longer supported and rejected by variable validation
+# AS2 over HTTP: protocol enabled on the server with as2_transports
 # -----------------------------------------------------------------------------
-run "reject_as2_protocol" {
+run "as2_details" {
   command = plan
 
   module {
@@ -345,12 +345,27 @@ run "reject_as2_protocol" {
   }
 
   variables {
-    name             = "example-as2"
-    logging_role_arn = "arn:aws:iam::123456789012:role/transfer-logging"
-    protocols        = ["AS2"]
+    name                     = "example-as2"
+    logging_role_arn         = "arn:aws:iam::123456789012:role/transfer-logging"
+    transfer_security_policy = "TransferSecurityPolicy-2025-03"
+
+    protocols = ["AS2"]
+
+    protocol_details = {
+      as2_transports = ["HTTP"]
+    }
   }
 
-  expect_failures = [var.protocols]
+  assert {
+    condition     = jsonencode(aws_transfer_server.default.protocols) == jsonencode(["AS2"])
+    error_message = "Expected AS2 protocol enabled, got: ${jsonencode(aws_transfer_server.default.protocols)}"
+  }
+
+  # as2_transports is a set, so check membership instead of indexing
+  assert {
+    condition     = contains(aws_transfer_server.default.protocol_details[0].as2_transports, "HTTP")
+    error_message = "Expected as2_transports to include HTTP, got: ${jsonencode(aws_transfer_server.default.protocol_details[0].as2_transports)}"
+  }
 }
 
 # -----------------------------------------------------------------------------

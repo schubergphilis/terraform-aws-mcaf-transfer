@@ -162,10 +162,11 @@ resource "aws_transfer_server" "default" {
     }
   }
 
-  # ── Protocol details (FTPS options) ─────────────────────────────────────────
+  # ── Protocol details (FTPS / AS2 options) ───────────────────────────────────
   dynamic "protocol_details" {
     for_each = var.protocol_details == null ? {} : { create = true }
     content {
+      as2_transports              = try(var.protocol_details.as2_transports, null)
       passive_ip                  = try(var.protocol_details.passive_ip, null)
       tls_session_resumption_mode = try(var.protocol_details.tls_session_resumption_mode, null)
       # Note: sftp_authentication_methods is TOP-LEVEL (not here).

@@ -46,12 +46,12 @@ variable "vpc_endpoint" {
 # Protocols & security policy (FTP forbidden)
 # ──────────────────────────────────────────────────────────────────────────────
 variable "protocols" {
-  description = "Enabled protocols: any of SFTP, FTPS. FTP and AS2 are not supported by this module."
+  description = "Enabled protocols (FTP is forbidden): any of SFTP, FTPS, AS2. Note: AS2 only enables the protocol on the server; agreements, connectors, profiles, and certificates are managed outside this module."
   type        = list(string)
   default     = ["SFTP"]
   validation {
-    condition     = length(var.protocols) > 0 && alltrue([for p in var.protocols : contains(["SFTP", "FTPS"], p)])
-    error_message = "Protocols must be a non-empty list with elements in {SFTP, FTPS}. FTP and AS2 are not allowed."
+    condition     = length(var.protocols) > 0 && alltrue([for p in var.protocols : contains(["SFTP", "FTPS", "AS2"], p)])
+    error_message = "Protocols must be a non-empty list with elements in {SFTP, FTPS, AS2}. FTP is not allowed."
   }
 }
 
@@ -100,11 +100,12 @@ variable "identity_provider_details" {
 # ──────────────────────────────────────────────────────────────────────────────
 variable "protocol_details" {
   type = object({
-    passive_ip                  = optional(string) # FTPS passive-mode public IP
-    tls_session_resumption_mode = optional(string) # ENABLED | DISABLED (FTPS)
+    as2_transports              = optional(list(string)) # AS2 transport, e.g. ["HTTP"]
+    passive_ip                  = optional(string)       # FTPS passive-mode public IP
+    tls_session_resumption_mode = optional(string)       # ENABLED | DISABLED (FTPS)
   })
   default     = null
-  description = "Advanced FTPS protocol details. Note: FTP and AS2 are not supported by this module."
+  description = "Advanced protocol details for FTPS and AS2. Note: FTP is not supported by this module."
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
