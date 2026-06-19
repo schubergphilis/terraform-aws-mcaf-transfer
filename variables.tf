@@ -3,7 +3,12 @@
 # ──────────────────────────────────────────────────────────────────────────────
 variable "name" {
   type        = string
-  description = "A unique name for this transfer server instance."
+  description = "A unique name for this transfer server instance. Used as the Name tag in the AWS Transfer Family console."
+
+  validation {
+    condition     = can(regex("^[A-Za-z][A-Za-z0-9-]{0,62}$", var.name))
+    error_message = "name must start with a letter and contain only letters, numbers, and hyphens, with a maximum length of 63 characters."
+  }
 }
 
 variable "tags" {
@@ -41,7 +46,7 @@ variable "vpc_endpoint" {
 # Protocols & security policy (FTP forbidden)
 # ──────────────────────────────────────────────────────────────────────────────
 variable "protocols" {
-  description = "Enabled protocols (FTP is forbidden): any of SFTP, FTPS, AS2."
+  description = "Enabled protocols (FTP is forbidden): any of SFTP, FTPS, AS2. Note: AS2 only enables the protocol on the server; agreements, connectors, profiles, and certificates are managed outside this module."
   type        = list(string)
   default     = ["SFTP"]
   validation {
@@ -61,8 +66,8 @@ variable "transfer_security_policy" {
   # Basic + hardened format check: require canonical prefix and a YYYY-MM suffix for year >= 2023.
   # (Allows FIPS/Restricted/PQ variants too.)
   validation {
-    condition     = can(regex("^TransferSecurityPolicy(?:-[A-Za-z]+)?-20(2[3-9]|[3-9][0-9])-(0[1-9]|1[0-2])$", var.transfer_security_policy))
-    error_message = "transfer_security_policy must look like TransferSecurityPolicy[-Variant]-YYYY-MM with year >= 2023 (e.g., TransferSecurityPolicy-2025-03 or TransferSecurityPolicy-FIPS-2025-03)."
+    condition     = can(regex("^TransferSecurityPolicy(?:-[A-Za-z0-9]+)?-20(2[3-9]|[3-9][0-9])-(0[1-9]|1[0-2])$", var.transfer_security_policy))
+    error_message = "transfer_security_policy must look like TransferSecurityPolicy[-Variant]-YYYY-MM with year >= 2023 (e.g., TransferSecurityPolicy-2025-03, TransferSecurityPolicy-FIPS-2025-03, or TransferSecurityPolicy-AS2Restricted-2025-07)."
   }
 }
 
@@ -95,13 +100,12 @@ variable "identity_provider_details" {
 # ──────────────────────────────────────────────────────────────────────────────
 variable "protocol_details" {
   type = object({
-    as2_transports              = optional(list(string)) # e.g., ["HTTP"] for AS2
+    as2_transports              = optional(list(string)) # AS2 transport, e.g. ["HTTP"]
     passive_ip                  = optional(string)       # FTPS passive-mode public IP
     tls_session_resumption_mode = optional(string)       # ENABLED | DISABLED (FTPS)
-    set_stat_option             = optional(string)       # ENABLE_NO_OP | DISABLED (FTP-only; ignored since FTP is disallowed)
   })
   default     = null
-  description = "Advanced protocol details; validated against protocol and identity settings. Note: FTP is disallowed by this module."
+  description = "Advanced protocol details for FTPS and AS2. Note: FTP is not supported by this module."
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -152,6 +156,23 @@ variable "logging_role_arn" {
   description = "IAM role ARN assumed by Transfer for CloudWatch logging (created outside this module)."
 }
 
+variable "structured_log_destinations" {
+  type        = set(string)
+  default     = null
+  description = "Set of CloudWatch Logs log-group ARNs for structured (JSON) logging. Leave null to use unstructured logging."
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# S3 storage options
+# ──────────────────────────────────────────────────────────────────────────────
+variable "s3_storage_options" {
+  type = object({
+    directory_listing_optimization = optional(string) # ENABLED | DISABLED
+  })
+  default     = null
+  description = "S3 storage options. Set directory_listing_optimization to ENABLED to speed up directory listings on S3-backed servers."
+}
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Users (IAM decoupled)
 # ──────────────────────────────────────────────────────────────────────────────
@@ -193,6 +214,48 @@ variable "on_partial_upload" {
 }
 
 # ──────────────────────────────────────────────────────────────────────────────
+# Custom hostname (console display / optional Route 53 integration)
+# ──────────────────────────────────────────────────────────────────────────────
+
+variable "custom_hostname" {
+  type        = string
+  default     = null
+  description = "Optional custom DNS name to display in the AWS Transfer console Hostname column."
+
+  # DNS hostname validation: dot-separated labels, each 1-63 chars, starting and
+  # ending alphanumeric (no leading/trailing dots or hyphens).
+  validation {
+    condition = (
+      var.custom_hostname == null ||
+      can(regex("^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$", var.custom_hostname))
+    )
+    error_message = "custom_hostname must be a valid DNS name: dot-separated labels of letters, numbers, and hyphens, each starting and ending with an alphanumeric character."
+  }
+}
+
+variable "route53_hosted_zone_id" {
+  type        = string
+  default     = null
+  description = "Optional Route 53 hosted zone ID for the custom hostname."
+
+  validation {
+    condition = (
+      # OK if unset
+      var.route53_hosted_zone_id == null
+      ||
+      (
+        # Must be valid ID format
+        can(regex("^(/hostedzone/)?Z[A-Z0-9]+$", var.route53_hosted_zone_id))
+        # And a hostname MUST be set if a zone is set
+        && var.custom_hostname != null
+      )
+    )
+    error_message = "If route53_hosted_zone_id is set, it must be a valid Route 53 zone ID and custom_hostname must also be provided."
+  }
+}
+
+
+# ──────────────────────────────────────────────────────────────────────────────
 # Host key safeguard (manage host identity via write-only API)
 # ──────────────────────────────────────────────────────────────────────────────
 # tflint-ignore: terraform_typed_variables,terraform_unused_declarations
@@ -210,5 +273,5 @@ variable "host_keys" {
   }))
   default     = []
   sensitive   = true
-  description = "List of host keys to attach (private keys are write-only at the API)."
+  description = "List of host keys to attach. Private keys are passed via the write-only host_key_body_wo argument (TF 1.11+) and are never stored in state or plan."
 }
